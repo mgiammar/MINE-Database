@@ -14,7 +14,7 @@ from typing import List, Union
 import pymongo
 from pymongo.errors import ServerSelectionTimeoutError
 from rdkit.Chem import AllChem
-from rdkit.RDLogger import logger
+# from rdkit.RDLogger import logger
 
 from minedatabase import utils
 
@@ -23,8 +23,8 @@ from minedatabase import utils
 
 # nps_model = nps.readNPModel()
 
-lg = logger()
-lg.setLevel(4)
+# lg = logger()
+# lg.setLevel(4)
 
 
 def establish_db_client(uri: str = None) -> pymongo.MongoClient:

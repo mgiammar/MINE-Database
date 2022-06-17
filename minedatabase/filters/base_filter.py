@@ -4,14 +4,14 @@ from copy import copy
 from typing import List, Set
 
 import rdkit.rdBase as rkrb
-import rdkit.RDLogger as rkl
+# import rdkit.RDLogger as rkl
 
 from minedatabase.pickaxe import Pickaxe
 
 
-logger = rkl.logger()
-logger.setLevel(rkl.ERROR)
-rkrb.DisableLog("rdApp.error")
+# logger = rkl.logger()
+# logger.setLevel(rkl.ERROR)
+# rkrb.DisableLog("rdApp.error")
 
 
 class Filter(metaclass=abc.ABCMeta):
@@ -63,7 +63,7 @@ class Filter(metaclass=abc.ABCMeta):
         print_on : bool
             Whether or not to print filtering results.
         """
-        time_sample = time.time()
+        time_start = time.time()
 
         self.generation = generation
 
@@ -82,7 +82,7 @@ class Filter(metaclass=abc.ABCMeta):
 
         if print_on:
             n_filtered = self._get_n(pickaxe, "filtered")
-            self._post_print(pickaxe, n_total, n_filtered, time_sample)
+            self._post_print(pickaxe, n_total, n_filtered, time.time() - time_start)
             self._post_print_footer(pickaxe)
 
     def _pre_print_header(self, pickaxe: Pickaxe) -> None:
@@ -182,7 +182,14 @@ class Filter(metaclass=abc.ABCMeta):
         compound_ids_to_check : List[str]
             List of compound IDs to try to remove, if possible.
         """
+        # print("check_cpds ", compound_ids_to_check)
+        # print("remove_rxns", reaction_ids_to_delete)
+        # print("len cpds 1 ", len(pickaxe.compounds))
 
+
+        # TODO: These functions to filter off compounds and reactions are confusing and
+        # seem inefficient. Might be better to re-write them with more understandable
+        # logic and actually understand the behavior
         def should_delete_reaction(rxn_id: str) -> bool:
             """Returns whether or not a reaction can safely be deleted."""
             products = pickaxe.reactions[rxn_id]["Products"]
@@ -205,7 +212,7 @@ class Filter(metaclass=abc.ABCMeta):
             for cpd_id in compound_ids:
                 if cpd_id.startswith("C"):
                     pickaxe.compounds[cpd_id]["Reactant_in"].remove(rxn_id)
-                    cpds_to_return.add(cpd_id)
+                    # cpds_to_return.add(cpd_id)  # We are not adding reactants
             # Delete reaction itself
             del pickaxe.reactions[rxn_id]
 
@@ -224,8 +231,9 @@ class Filter(metaclass=abc.ABCMeta):
                 # Orphan compound is one that has no reaction connecting it
                 if cpd_id in pickaxe.compounds:
                     product_of = copy(pickaxe.compounds[cpd_id].get("Product_of", []))
+                    cpd_type = pickaxe.compounds[cpd_id]["Type"]
                     # Delete if no reactions
-                    if not product_of:
+                    if product_of == [] and cpd_type not in ("Starting Compound", "Coreactant"):
                         # Delete out reactions
                         reactant_in = copy(
                             pickaxe.compounds[cpd_id].get("Reactant_in", [])
@@ -237,6 +245,7 @@ class Filter(metaclass=abc.ABCMeta):
                         # Now delete compound
                         del pickaxe.compounds[cpd_id]
 
+        # print("len cpds 2 ", len(pickaxe.compounds))
         # Go through compounds_ids_to_check and delete cpds/rxns as needed
         if compound_ids_to_check:
             cpds_to_remove = set()
@@ -284,6 +293,8 @@ class Filter(metaclass=abc.ABCMeta):
             # Remove compounds and reactions if any found
             for cpd_id in cpds_to_remove:
                 del pickaxe.compounds[cpd_id]
+        # print("len cpds 3 ", len(pickaxe.compounds))
+            
 
 
 if __name__ == "__main__":

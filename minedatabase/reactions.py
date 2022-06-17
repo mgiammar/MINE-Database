@@ -17,13 +17,15 @@ from rdkit.Chem.AllChem import (
     SanitizeMol,
     GetFormalCharge,
 )
+import pickle
+
 
 from minedatabase import utils
 
 
-logger = rkl.logger()
-logger.setLevel(rkl.ERROR)
-rkrb.DisableLog("rdApp.error")
+# logger = rkl.logger()
+# logger.setLevel(rkl.ERROR)
+# rkrb.DisableLog("rdApp.error")
 
 ###############################################################################
 # Functions to run transformations

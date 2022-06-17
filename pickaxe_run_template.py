@@ -67,18 +67,19 @@ output_dir = "."
 #### Starting Compounds, Cofactors, and Rules
 # Input compounds in a csv folder with headings:
 # id,smiles
-input_cpds = "./example_data/starting_cpds_single.csv"
+input_cpds = "./example_data/iML1515_ecoli_GEM.csv"
+# input_cpds = "./example_data/starting_cpds_single.csv"
 
 # Rule specification and generation. Rules can be manually created or
 # metacyc_intermediate or metacyc_generalized can provide correctly formatted
 # biological reactions derived from metacyc.
 #
 # See the documentation for description of options.
-rule_list, coreactant_list, rule_name = metacyc_intermediate(
-    n_rules=None,
-    fraction_coverage=0.2,
-    anaerobic=True,
-    exclude_containing = ["aromatic", "halogen"]
+rule_list, coreactant_list, rule_name = metacyc_generalized(
+    n_rules=20,
+    # fraction_coverage=1,
+    # anaerobic=True,
+    # exclude_containing = ["aromatic", "halogen"]
 )
 
 ###############################################################################
@@ -200,7 +201,7 @@ feasibility_filter = None
 # Filters by similarity score, uses default RDKit fingerprints and tanimoto by default
 
 # Apply this filter?
-similarity_filter = True
+similarity_filter = False
 
 # Methods to calculate similarity by, default is RDkit and Tanimoto
 # Supports Morgan Fingerprints and Dice similarity as well.
@@ -382,18 +383,34 @@ if __name__ == "__main__":
     # Use "spawn" for multiprocessing
     multiprocessing.set_start_method("spawn")
 
-    # Define mongo_uri
-    # mongo_uri definition, don't modify
-    if write_db == False:
-        mongo_uri = None
-    elif use_local:
-        mongo_uri = "mongodb://localhost:27017"
-    else:
-        mongo_uri = open("mongo_uri.csv").readline().strip("\n")
+    # print(f"coreactant_list={coreactant_list},")
+    # print(f"rule_list={rule_list},")
+    # print(f"errors={verbose},")
+    # print(f"explicit_h={explicit_h},")
+    # print(f"kekulize={kekulize},")
+    # print(f"neutralise={neutralise},")
+    # print(f"image_dir={None},")
+    # print(f"inchikey_blocks_for_cid={inchikey_blocks_for_cid},")
+    # print(f"database={database},")
+    # print(f"database_overwrite={database_overwrite},")
+    # print(f"mongo_uri={None},")
+    # print(f"quiet={quiet},")
+    # print(f"react_targets={react_targets},")
+    # print(f"filter_after_final_gen={filter_after_final_gen}")
 
-    # Change database to none if not writing
-    if write_db is False:
-        database = None
+    # exit(0)
+    # Define mongo_uri
+    # # mongo_uri definition, don't modify
+    # if write_db == False:
+    #     mongo_uri = None
+    # elif use_local:
+    #     mongo_uri = "mongodb://localhost:27017"
+    # else:
+    #     mongo_uri = open("mongo_uri.csv").readline().strip("\n")
+
+    # # Change database to none if not writing
+    # if write_db is False:
+    #     database = None
 
     ### Initialize the Pickaxe class
     # print parameters
@@ -409,9 +426,9 @@ if __name__ == "__main__":
         neutralise=neutralise,
         image_dir=None,
         inchikey_blocks_for_cid=inchikey_blocks_for_cid,
-        database=database,
+        database=None,
         database_overwrite=database_overwrite,
-        mongo_uri=mongo_uri,
+        mongo_uri=None,
         quiet=quiet,
         react_targets=react_targets,
         filter_after_final_gen=filter_after_final_gen
@@ -483,6 +500,12 @@ if __name__ == "__main__":
 
     if thermo_filter:
         pk.filters.append(thermo_filter)
+
+    print("num filters", len(pk.filters))
+    print("filters", pk.filters)
+    print("filter types", [type(f) for f in pk.filters])
+
+    exit()
 
     # Transform compounds (the main step)
     pk.transform_all(processes, generations)

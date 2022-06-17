@@ -2,6 +2,8 @@
 
 from typing import Union
 
+import re
+
 import pint
 from equilibrator_api import (
     Q_,
@@ -169,10 +171,23 @@ class Thermodynamics:
         # No compound_smiles at all
         if not compound_smiles or "*" in compound_smiles:
             return None
+
+        # Regex pattern to filter off triple bonds in rings. Try except block does not work
+        if len(re.findall("\d).*#.*\1", compound_smiles)):
+            return None
+        
+        # Need to add a try except block since equilibrator cannot deal with
+        # triple bonds within aromatic rings
         else:
-            eQ_compound = self.lc.get_compounds(
-                compound_smiles, bypass_chemaxon=True, save_empty_compounds=True
-            )
+            try:
+                eQ_compound = self.lc.get_compounds(
+                    compound_smiles,
+                    bypass_chemaxon=True,
+                    save_empty_compounds=True,
+                    connectivity_only=True,
+                )
+            except Exception as e:
+                return None
             return eQ_compound
 
     def standard_dg_formation_from_cid(
@@ -225,13 +240,16 @@ class Thermodynamics:
             if r_id in pickaxe.reactions:
                 reaction_info = pickaxe.reactions[r_id]
             else:
+                print(f"reaction id {r_id} not in pickaxe.reactions")
                 return None
         elif db_name:
             mine = self.client[db_name]
             reaction_info = mine.reactions.find_one({"_id": r_id})
             if not reaction_info:
+                print(f"reaction id {r_id} not found in the database.\ndb_name: {db_name}")
                 return None
         else:
+            print("pickaxe is None")
             return None
 
         reactants = reaction_info["Reactants"]

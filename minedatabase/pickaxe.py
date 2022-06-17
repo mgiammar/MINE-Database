@@ -30,7 +30,7 @@ from rdkit.Chem.AllChem import (
 from rdkit.Chem.Draw import MolToFile, rdMolDraw2D
 from rdkit.Chem.rdchem import Mol
 from rdkit.Chem.rdMolDescriptors import CalcMolFormula
-from rdkit.RDLogger import logger
+# from rdkit.RDLogger import logger
 
 from minedatabase import utils
 from minedatabase.databases import (
@@ -44,8 +44,8 @@ from minedatabase.reactions import transform_all_compounds_with_full
 
 
 # Default to no errors
-lg = logger()
-lg.setLevel(4)
+# lg = logger()
+# lg.setLevel(4)
 
 
 class Pickaxe:
@@ -188,6 +188,10 @@ class Pickaxe:
         # cid options
         self.cid_num_inchi_blocks = inchikey_blocks_for_cid
 
+        # Custom
+        self.num_new_compounds = None
+        self.num_new_reactions = None
+
         print("----------------------------------------")
         print("Intializing pickaxe object")
         if database:
@@ -225,8 +229,8 @@ class Pickaxe:
 
         # Use RDLogger to catch errors in log file. SetLevel indicates mode (
         # 0 - debug, 1 - info, 2 - warning, 3 - critical). Default is no errors
-        if errors:
-            lg.setLevel(0)
+        # if errors:
+        #     lg.setLevel(0)
 
         # Load coreactants (if any) into Pickaxe object
         if coreactant_list:
@@ -672,6 +676,9 @@ class Pickaxe:
 
                 self._transform_helper(compound_smiles, processes)
                 self._remove_cofactor_redundancy()
+
+                self.num_new_compounds = len(self.compounds) - n_comps
+                self.num_new_reactions = len(self.reactions) - n_rxns
 
                 print(
                     f"Generation {self.generation + 1} finished in"
