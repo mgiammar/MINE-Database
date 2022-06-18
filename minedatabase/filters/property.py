@@ -14,6 +14,10 @@ logger.setLevel(rkl.ERROR)
 rkrb.DisableLog("rdApp.error")
 
 
+import logging
+logger = logging.getLogger("run_pickaxe")
+
+
 class MWFilter(Filter):
     """A filter that removes compounds not within a MW range.
 
@@ -71,6 +75,12 @@ class MWFilter(Filter):
         cpds_remove_set = set()
         rxn_remove_set = set()
 
+        logger.info(
+            f"""Filtering Generation {pickaxe.generation}
+            with {self.min_MW} < MW < {self.max_MW}.
+            """
+        )
+
         print(
             f"Filtering Generation {pickaxe.generation} "
             f"with {self.min_MW} < MW < {self.max_MW}."
@@ -95,6 +105,11 @@ class MWFilter(Filter):
 
         for c_id in cpds_remove_set:
             pickaxe.compounds[c_id]["Expand"] = False
+
+        logger.info(
+            f"""
+            """
+        )
 
         return cpds_remove_set, rxn_remove_set
 

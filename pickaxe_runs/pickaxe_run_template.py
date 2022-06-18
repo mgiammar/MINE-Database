@@ -4,6 +4,7 @@ import pickle
 import time
 import os
 import traceback
+import logging
 
 from rdkit import Chem
 
@@ -129,17 +130,17 @@ def transform_pickaxe_compounds(
     # Get last generation of pickaxe object so old runs can be loaded and run further
     # TODO: test this feature
     previous_gen = pk.generation
-    _write_info_to_file(
-        f"""
-        ------- General Info for Pickaxe Run -------
-        starting gen: {previous_gen}
-        generations:  {generations}
-        processes:    {processes}
-        filters:      {[fil.filter_name for fil in pk.filters]}
+    # _write_info_to_file(
+    #     f"""
+    #     ------- General Info for Pickaxe Run -------
+    #     starting gen: {previous_gen}
+    #     generations:  {generations}
+    #     processes:    {processes}
+    #     filters:      {[fil.filter_name for fil in pk.filters]}
 
-        ----------------------------------------------------------------
-        """
-    )
+    #     ----------------------------------------------------------------
+    #     """
+    # )
 
     total_time = 0  # in seconds
     for gen in range(0, generations + 1):
@@ -156,59 +157,81 @@ def transform_pickaxe_compounds(
             ) as pik_file:
                 pickle.dump(pk, pik_file)
 
-            _write_info_to_file(
-                f"""
-                ------- Pickaxe Run Interrupted -------
-                The run was stopped during generation {gen} of {generations} due to a 
-                keyboard interrupt.
-                The current Pickaxe object has been saved to
+                logger.error(f"------- Pickaxe Run Interrupted -------")
+                logger.error(f"The run was stopped during generation {gen} of {generations} due to a ")
+                logger.error(f"keyboard interrupt.")
+                logger.error(f"The current Pickaxe object has been saved to")
+                logger.error(f"{__location__}/pickaxe_run interrupt {gen} of {generations}.pik")
+                logger.error(f"Elapsed time:     {str(datetime.timedelta(seconds=total_time))}")
 
-                {f"{__location__}/pickaxe_run interrupt {gen} of {generations}.pik"}
+            # _write_info_to_file(
+            #     f"""
+            #     ------- Pickaxe Run Interrupted -------
+            #     The run was stopped during generation {gen} of {generations} due to a 
+            #     keyboard interrupt.
+            #     The current Pickaxe object has been saved to
 
-                Elapsed time:     {str(datetime.timedelta(seconds=total_time))}
-                """
-            )
+            #     {f"{__location__}/pickaxe_run interrupt {gen} of {generations}.pik"}
+
+            #     Elapsed time:     {str(datetime.timedelta(seconds=total_time))}
+            #     """
+            # )
         except Exception as e:
             with open(
                 f"{__location__}/pickaxe_run interrupt {gen} of {generations}.pik", "wb"
             ) as pik_file:
                 pickle.dump(pk, pik_file)
 
-            _write_info_to_file(
-                f"""
-                ------- Pickaxe Run Errored Out -------
-                The run was stopped during generation {gen} of {generations} due to an
-                unexpected error.
-                The current Pickaxe object has been saved to
+                logger.error(f"------- Pickaxe Run Errored Out -------")
+                logger.error(f"The run was stopped during generation {gen} of {generations} due to an")
+                logger.error(f"unexpected error.")
+                logger.error(f"The current Pickaxe object has been saved to")
+                logger.error(f"{__location__}/pickaxe_run interrupt {gen} of {generations}.pik")
+                logger.error(f"The stack trace of the error:")
+                logger.error(f"{str(e)}")
+                logger.error(f"{traceback.format_exc()}")
+                logger.error(f"Elapsed time:     {str(datetime.timedelta(seconds=total_time))}")
 
-                {f"{__location__}/pickaxe_run interrupt {gen} of {generations}.pik"}
+            # _write_info_to_file(
+            #     f"""
+            #     ------- Pickaxe Run Errored Out -------
+            #     The run was stopped during generation {gen} of {generations} due to an
+            #     unexpected error.
+            #     The current Pickaxe object has been saved to
 
-                The stack trace of the error:
+            #     {f"{__location__}/pickaxe_run interrupt {gen} of {generations}.pik"}
 
-                {str(e)}
-                {traceback.format_exc()}
+            #     The stack trace of the error:
 
-                Elapsed time:     {str(datetime.timedelta(seconds=total_time))}
-                """
-            )
+            #     {str(e)}
+            #     {traceback.format_exc()}
+
+            #     Elapsed time:     {str(datetime.timedelta(seconds=total_time))}
+            #     """
+            # )
             raise e
         
         # Update time variables and write to info 
         end_time = time.time()
         gen_time = end_time - start_time
         total_time += gen_time
-        _write_info_to_file(
-            f"""
-            ------- Generation {gen} of {generations} -------
-            Computation time: {str(datetime.timedelta(seconds=gen_time))}
-            Elapsed time:     {str(datetime.timedelta(seconds=total_time))}
-            New Compounds:    {pk.num_new_compounds}
-            New Reactions:    {pk.num_new_reactions}
-            
-            {pk.filters[0].info_string}
-            """
-            # NOTE: Info string from filter currently hardcoded
-        )
+        
+        logger.info(f"------- Generation {gen} of {generations} -------")
+        logger.info(f"Computation time: {str(datetime.timedelta(seconds=gen_time))}")
+        logger.info(f"Elapsed time:     {str(datetime.timedelta(seconds=total_time))}")
+        logger.info(f"New Compounds:    {pk.num_new_compounds}")
+        logger.info(f"New Reactions:    {pk.num_new_reactions}")
+
+        # _write_info_to_file(
+        #     f"""
+        #     ------- Generation {gen} of {generations} -------
+        #     Computation time: {str(datetime.timedelta(seconds=gen_time))}
+        #     Elapsed time:     {str(datetime.timedelta(seconds=total_time))}
+        #     New Compounds:    {pk.num_new_compounds}
+        #     New Reactions:    {pk.num_new_reactions}
+        #     """
+        #     # NOTE: Info string from filter currently hardcoded
+        # )
 
         # Export the pickaxe object to a pickle file
         with open(
@@ -216,31 +239,68 @@ def transform_pickaxe_compounds(
         ) as pik_file:
             pickle.dump(pk, pik_file)
 
+    logger.info(f"------- Pickaxe Run Complete -------")
+    logger.info(f"Elapsed time:     {str(datetime.timedelta(seconds=total_time))}")
     # Write final info after completing pickaxe run
-    _write_info_to_file(
-        f"""
-        ------- Pickaxe Run Complete -------
-        Elapsed time:     {str(datetime.timedelta(seconds=total_time))}
+    # _write_info_to_file(
+    #     f"""
+    #     ------- Pickaxe Run Complete -------
+    #     Elapsed time:     {str(datetime.timedelta(seconds=total_time))}
 
-        """
-    )
+    #     """
+    # )
 
 
 
 # ======================================== MAIN ========================================
 if __name__ == "__main__":
+    # Setup logging object
+    logging.getLogger().setLevel(logging.INFO)
+    logfile = f"{__location__}/pk_run.log"
+    if(os.path.isfile(logfile)):
+            os.remove(logfile)
+    file_handler = logging.FileHandler(logfile)
+    formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.DEBUG)
+
+    logger = logging.getLogger("run_pickaxe")
+    logger.addHandler(file_handler)
+
+    rule_file = "/Users/mgiammar/Documents/MINE-Database/minedatabase/data/original_rules/EnzymaticReactionRules.tsv"
+    coreactant_file = "/Users/mgiammar/Documents/MINE-Database/minedatabase/data/original_rules/EnzymaticCoreactants.tsv"
+    starting_compounds_file = "/Users/mgiammar/Documents/MINE-Database/jvci_random_7.csv"
+    # starting_compounds_file = "/Users/mgiammar/Documents/MINE-Database/jvci_syn3A.csv"
+
+    logger.info(f"-------- Start of Pickaxe Run --------")
+    logger.info(f"Creating Pickaxe object with")
+    logger.info(f"Rules:       {rule_file}")
+    logger.info(f"Coreactants: {coreactant_file}")
+    logger.info(f"Compounds:   {starting_compounds_file}")
+
     # Make a new pickaxe object
     pk = make_pickaxe_object(
-        rules="/Users/mgiammar/Documents/MINE-Database/minedatabase/data/original_rules/EnzymaticReactionRules.tsv",
-        coreactants="/Users/mgiammar/Documents/MINE-Database/minedatabase/data/original_rules/EnzymaticCoreactants.tsv",
-        # starting_compounds="/Users/mgiammar/Documents/MINE-Database/jvci_syn3A.csv"
-        starting_compounds="/Users/mgiammar/Documents/MINE-Database/jvci_random_7.csv"
+        rules=rule_file,
+        coreactants=coreactant_file,
+        starting_compounds=starting_compounds_file
     )
+
+    logger.info("Pickaxe object instantiated")
 
     # Add filters to the pickaxe object
     pk.filters = []
 
+    # TODO: Add more info about filter objects, possibly within the filter file
+    logger.info(f"Added {len(pk.filters)} to the Pickaxe object")
+
     # NOTE: REMEMBER TO NOT CALL transform_all USE CUSTOM transform_pickaxe_compounds
+    processes = 2
+    generations = 2
+
+    logger.info(f"-------- Start of Transformation --------")
+    logger.info(f"Generations: {generations}")
+    logger.info(f"Processes:   {processes}")
+
     transform_pickaxe_compounds(pk, 2, processes=1)
 
     print("PICKAXE RUN COMPLETED")

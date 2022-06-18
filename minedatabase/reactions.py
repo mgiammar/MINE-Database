@@ -23,6 +23,10 @@ import pickle
 from minedatabase import utils
 
 
+import logging
+logger = logging.getLogger("run_pickaxe")
+
+
 # logger = rkl.logger()
 # logger.setLevel(rkl.ERROR)
 # rkrb.DisableLog("rdApp.error")
@@ -344,8 +348,11 @@ def transform_all_compounds_with_full(
         # Use print_on to print % completion roughly every 2.5 percent
         # Include max to print no more than once per compound (e.g. if
         # less than 20 compounds)
-        print_on = max(round(0.1 * total), 1)
+        print_on = max(round(0.02 * total), 1)
         if not done % print_on:
+            logger.info(
+                f"Generation {generation}: {round(done / total * 100)} percent complete"
+            )
             print(
                 f"Generation {generation}: {round(done / total * 100)}"
                 " percent complete"

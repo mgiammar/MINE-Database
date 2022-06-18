@@ -14,6 +14,10 @@ from minedatabase.pickaxe import Pickaxe
 # rkrb.DisableLog("rdApp.error")
 
 
+import logging
+logger = logging.getLogger("run_pickaxe")
+
+
 class Filter(metaclass=abc.ABCMeta):
     """Abstract base class used to generate filters.
 
@@ -96,6 +100,9 @@ class Filter(metaclass=abc.ABCMeta):
         print("----------------------------------------")
         print(f"Filtering Generation {pickaxe.generation}\n")
 
+        logger.info("----------------------------------------")
+        logger.info(f"Filtering Generation {pickaxe.generation}")
+
     def _pre_print(self) -> None:
         """Print filter being applied."""
         print(f"Applying filter: {self.filter_name}")
@@ -122,6 +129,10 @@ class Filter(metaclass=abc.ABCMeta):
             f"filter: {self.filter_name}"
             f"--took {round(time.time() - time_sample, 2)}s.\n"
         )
+
+        logger.info(f"{n_filtered} of {n_total} compounds remain after applying")
+        logger.info(f"filter: {self.filter_name}")
+        logger.info(f"--took {round(time.time() - time_sample, 2)}s.")
 
     def _post_print_footer(self, pickaxe: Pickaxe) -> None:
         """Print end of filtering.

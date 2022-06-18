@@ -43,6 +43,9 @@ from minedatabase.databases import (
 from minedatabase.reactions import transform_all_compounds_with_full
 
 
+import logging
+logger = logging.getLogger("run_pickaxe")
+
 # Default to no errors
 # lg = logger()
 # lg.setLevel(4)
@@ -330,6 +333,9 @@ class Pickaxe:
 
         else:
             raise ValueError("No input file specified for starting compounds")
+
+            logger.info(f"{len(compound_smiles)} compounds loaded...")
+            logger.info(f"({len(self.compounds) - initial_cpds_n} after removing stereochemistry)")
 
         print(f"{len(compound_smiles)} compounds loaded...")
         print(
