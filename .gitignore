@@ -93,3 +93,6 @@ msrb-fragmenter/
 
 # eq
 compounds.sqlite
+*.pik
+*.png
+/pickaxe_runs/*/
