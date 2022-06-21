@@ -7,5 +7,7 @@ from minedatabase.filters.similarity import (
     SimilaritySamplingFilter,
 )
 
-from minedatabase.filters.thermodynamics import ThermoFilter
+# from minedatabase.filters.thermodynamics import ThermoFilter
 # from minedatabase.filters.toxicity import ToxicityFilter
+
+from minedatabase.filters.similarity_sampling import SimilarityClusteringFilter
