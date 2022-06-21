@@ -132,7 +132,7 @@ class Filter(metaclass=abc.ABCMeta):
 
         logger.info(f"{n_filtered} of {n_total} compounds remain after applying")
         logger.info(f"filter: {self.filter_name}")
-        logger.info(f"--took {round(time.time() - time_sample, 2)}s.")
+        logger.info(f"--took {round(time_sample, 2)}s.")
 
     def _post_print_footer(self, pickaxe: Pickaxe) -> None:
         """Print end of filtering.

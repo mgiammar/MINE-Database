@@ -11,6 +11,7 @@ from rdkit import Chem
 import minedatabase
 
 from minedatabase.filters import MCSFilter, MetabolomicsFilter, MWFilter
+from minedatabase.filters import SimilarityClusteringFilter
 # from minedatabase.filters.thermodynamics import ThermoFilter
 from minedatabase.pickaxe import Pickaxe
 
@@ -267,10 +268,10 @@ if __name__ == "__main__":
     logger = logging.getLogger("run_pickaxe")
     logger.addHandler(file_handler)
 
-    rule_file = "/Users/mgiammar/Documents/MINE-Database/minedatabase/data/original_rules/EnzymaticReactionRules.tsv"
-    coreactant_file = "/Users/mgiammar/Documents/MINE-Database/minedatabase/data/original_rules/EnzymaticCoreactants.tsv"
-    starting_compounds_file = "/Users/mgiammar/Documents/MINE-Database/jvci_random_7.csv"
-    # starting_compounds_file = "/Users/mgiammar/Documents/MINE-Database/jvci_syn3A.csv"
+    rule_file = "/homes/mgiammar/Documents/MINE-Database/minedatabase/data/original_rules/EnzymaticReactionRules.tsv"
+    coreactant_file = "/homes/mgiammar/Documents/MINE-Database/minedatabase/data/original_rules/EnzymaticCoreactants.tsv"
+    starting_compounds_file = "/homes/mgiammar/Documents/MINE-Database/jvci_random_7.csv"
+    # starting_compounds_file = "/homes/mgiammar/Documents/MINE-Database/jvci_syn3A.csv"
 
     logger.info(f"-------- Start of Pickaxe Run --------")
     logger.info(f"Creating Pickaxe object with")
@@ -288,19 +289,28 @@ if __name__ == "__main__":
     logger.info("Pickaxe object instantiated")
 
     # Add filters to the pickaxe object
-    pk.filters = []
+    # cluster_filter = SimilarityClusteringFilter(
+    #     cutoff=0.3,
+    #     compounds_per_cluster=2,
+    #     fingerprint_bits=512
+    # )
+    # pk.filters = [cluster_filter]
+
+    random_filter = RandomSubselectionFilter(
+        max_compounds=10000, generation_list=[1, 2, 3, 4, 5, 6, 7]
+    )
 
     # TODO: Add more info about filter objects, possibly within the filter file
     logger.info(f"Added {len(pk.filters)} to the Pickaxe object")
 
     # NOTE: REMEMBER TO NOT CALL transform_all USE CUSTOM transform_pickaxe_compounds
-    processes = 2
-    generations = 2
+    processes = os.cpu_count() / 20
+    generations = 7
 
     logger.info(f"-------- Start of Transformation --------")
     logger.info(f"Generations: {generations}")
     logger.info(f"Processes:   {processes}")
 
-    transform_pickaxe_compounds(pk, 2, processes=1)
+    transform_pickaxe_compounds(pk, generations=generations, processes=processes)
 
     print("PICKAXE RUN COMPLETED")
