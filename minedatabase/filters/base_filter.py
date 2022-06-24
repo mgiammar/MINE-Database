@@ -127,7 +127,7 @@ class Filter(metaclass=abc.ABCMeta):
         print(
             f"{n_filtered} of {n_total} compounds remain after applying "
             f"filter: {self.filter_name}"
-            f"--took {round(time.time() - time_sample, 2)}s.\n"
+            f"--took {round(time_sample, 2)}s.\n"
         )
 
         logger.info(f"{n_filtered} of {n_total} compounds remain after applying")

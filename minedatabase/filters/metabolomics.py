@@ -390,7 +390,7 @@ class MetabolomicsFilter(Filter):
             (
                 f"{n_filtered} of {n_total} compounds selected after "
                 f"Metabolomics filtering of generation {pickaxe.generation}"
-                f"--took {round(time.time() - time_sample, 2)}s.\n"
+                f"--took {round(time_sample, 2)}s.\n"
             )
         )
 
