@@ -124,11 +124,11 @@ class Filter(metaclass=abc.ABCMeta):
         times_sample : float
             Time in seconds from time.time().
         """
-        print(
-            f"{n_filtered} of {n_total} compounds remain after applying "
-            f"filter: {self.filter_name}"
-            f"--took {round(time_sample, 2)}s.\n"
-        )
+        # print(
+        #     f"{n_filtered} of {n_total} compounds remain after applying "
+        #     f"filter: {self.filter_name}"
+        #     f"--took {round(time_sample, 2)}s.\n"
+        # )
 
         logger.info(f"{n_filtered} of {n_total} compounds remain after applying")
         logger.info(f"filter: {self.filter_name}")
