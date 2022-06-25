@@ -58,7 +58,11 @@ class SimilarityClusteringFilter(Filter):
             do not cluster initial metabolomics data).
         (int) max_compounds: Maximum number of compounds to try and apply filter to.
             If the number of new compounds exceeds this value, the filter will not be
-            applied
+            applied  TODO: Make None have no restriction
+        (bool) strict_filter: If True, the filter will return a compound ID set for
+            compounds to remove. Otherwise an empty set will be returned and only the 
+            compounds selected will be marked for expansion. Default is True
+            TODO implement this.
     """
 
     def __init__(
@@ -69,6 +73,7 @@ class SimilarityClusteringFilter(Filter):
         similarity_metric="default",
         generation_list=None,
         max_compounds=10000,
+        strict_filter=True,
     ):
         fprint_kwargs = {} if fprint_kwargs is None else fprint_kwargs
         # TODO: Setup similarity metric
@@ -80,6 +85,7 @@ class SimilarityClusteringFilter(Filter):
         self.compounds_selected_per_cluster = compounds_selected_per_cluster
         self.max_compounds = max_compounds
 
+        self.strict_filter = strict_filter
         self.fprint_kwargs = fprint_kwargs
         self.similarity_metric = similarity_metric  # String
         similarity_metric_func = None
@@ -97,24 +103,25 @@ class SimilarityClusteringFilter(Filter):
         logger.info(f"Compounds per cluster:  {self.compounds_selected_per_cluster}")
         logger.info(f"Fingerprint kwargs:     {self.fprint_kwargs}")
         logger.info(f"Similarity metric:      {self.similarity_metric}")
+        logger.info(f"Strict Filter:          {self.strict_filter}")
     
     def _post_print_footer(self, pickaxe: Pickaxe) -> None:
         """Post filtering info"""
         logger.info(f"Done filtering Generation {pickaxe.generation}")
         logger.info("-----------------------------------------------")
 
-    def _should_filter_this_generation(self, pickaxe):
+    def _should_filter_this_generation(self):
         """Returns True if this filter should be applied for this generation, False
         otherwise.
         """
         # NOTE: Could have made one bool expression, but more comprehensible to split up
-        if pickaxe.generation == 0:
+        if self.generation == 0:
             return False
         
         if self.generation_list is None:
             return True
 
-        return (pickaxe.generation - 1) in self.generation_list
+        return (self.generation - 1) in self.generation_list
 
     def _choose_items_to_filter(self, pickaxe, processes):
         """Creates clusters based on fingerprint similarity using RDKit and samples 
@@ -126,7 +133,7 @@ class SimilarityClusteringFilter(Filter):
         rxn_remove_set = set()
 
         # Do not filter on zeroth generation
-        if not self._should_filter_this_generation(pickaxe):
+        if not self._should_filter_this_generation():
             return cpds_remove_set, rxn_remove_set
 
         # Dictionary with compound id as key and smiles for that compound as value
@@ -135,7 +142,7 @@ class SimilarityClusteringFilter(Filter):
             if cpd["Generation"] == pickaxe.generation
         }
 
-        if len(smiles_by_cid) > self.max_compounds:
+        if self.max_compounds is not None and len(smiles_by_cid) > self.max_compounds:
             logger.warn("Number of compounds too long. Skipping clustering")
             return cpds_remove_set, rxn_remove_set
 
@@ -143,15 +150,21 @@ class SimilarityClusteringFilter(Filter):
         similarly_matrix = self._generate_similarity_matrix(smiles_by_cid, processes)
         clusters = self._generate_clusters(smiles_by_cid, similarly_matrix, self.cutoff)
 
+        cpd_ids_to_keep = set()
         for cluster in clusters:
             keep_ids = np.random.choice(
                 cluster,
                 replace=False,
                 size=min(self.compounds_selected_per_cluster, len(cluster))
             )
-            # NOTE: Could first set Expand to False for all and then only update selected
-            for cpd_id in cluster:
-                pickaxe.compounds[cpd_id]["Expand"] = cpd_id in keep_ids
+            cpd_ids_to_keep = cpd_ids_to_keep.union(keep_ids)
+        
+        for cpd_id in pickaxe.compounds.keys():
+            pickaxe.compounds[cpd_id]["Expand"] = cpd_id in cpd_ids_to_keep
+
+        # Return IDs of all compounds in this generation to not keep
+        if self.strict_filter:
+            cpds_remove_set = set(smiles_by_cid.keys()).difference(cpd_ids_to_keep)
 
         return cpds_remove_set, rxn_remove_set
 
@@ -288,7 +301,7 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
         rxn_remove_set = set()
 
         # Do not filter on zeroth generation
-        if not self._should_filter_this_generation(pickaxe):
+        if not self._should_filter_this_generation():
             return cpds_remove_set, rxn_remove_set
 
         # Dictionary with compound id as key and smiles for that compound as value
@@ -301,7 +314,7 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
         for cpd_id in smiles_by_cid.keys():
             pickaxe.compounds[cpd_id]["Expand"] = False
 
-        if len(smiles_by_cid) > self.max_compounds:
+        if self.max_compounds is not None and len(smiles_by_cid) > self.max_compounds:
             logger.warn("Number of compounds too long. Skipping clustering")
             return cpds_remove_set, rxn_remove_set
 
@@ -350,6 +363,9 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
         # Set Expand to true for compounds ids in the cpd_ids_to_keep set
         for cp_id in cpd_ids_to_keep:
             pickaxe.compounds[cp_id]["Expand"] = True
+
+        if self.strict_filter:
+            cpds_remove_set = set(smiles_by_cid.keys()).difference(cpd_ids_to_keep)
 
         return cpds_remove_set, rxn_remove_set
 
