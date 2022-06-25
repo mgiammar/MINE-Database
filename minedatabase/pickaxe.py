@@ -980,9 +980,9 @@ class Pickaxe:
                 f"{len(rxn_set)} reactions based on "
                 f"{n_white} whitelisted compounds.\n"
             )
-            logger.log(f"Pruned network to {len(cpd_set)} compounds and ")
-            logger.log(f"{len(rxn_set)} reactions based on ")
-            logger.log(f"{n_white} whitelisted compounds.\n")
+            logger.info(f"Pruned network to {len(cpd_set)} compounds and ")
+            logger.info(f"{len(rxn_set)} reactions based on ")
+            logger.info(f"{n_white} whitelisted compounds.\n")
 
     def prune_network_to_targets(self) -> None:
         """Prune the reaction network to the target compounds.
