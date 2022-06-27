@@ -3,6 +3,8 @@ import os
 import sys
 import gc
 import multiprocessing
+import traceback
+import argparse
 import functools
 import numpy as np
 import pandas as pd
@@ -18,16 +20,7 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 # Setup logging before starting script
 import logging
 logging.getLogger().setLevel(logging.INFO)
-logfile = f"{__location__}/dataframe.log"
-if(os.path.isfile(logfile)):
-        os.remove(logfile)
-file_handler = logging.FileHandler(logfile)
-formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
-file_handler.setFormatter(formatter)
-file_handler.setLevel(logging.DEBUG)
-
 logger = logging.getLogger("create_dataframe")
-logger.addHandler(file_handler)
 
 
 # Create ModelSEED dictionaries
@@ -175,12 +168,29 @@ def validate_files(files):
 
 if __name__ == "__main__":
     # Get command line arguments and input into variables
-    args = sys.argv[1:]
-    cols, files = load_col_names_and_files_from_csv(args[0])
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--csv", nargs=1)
+    parser.add_argument("--outfile", nargs="?", const="dataframe.paq")
+    parser.add_argument("--processes", nargs="?", const=multiprocessing.cpu_count()//4)
+    parser.add_argument("--logfile", nargs="?", const=f"{__location__}/df_log.log")
+    args = parser.parse_args()
 
+    logfile = args.logfile
+    if(os.path.isfile(logfile)):
+            os.remove(logfile)
+    file_handler = logging.FileHandler(logfile)
+    formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.DEBUG)
+    logger.addHandler(file_handler)
+
+    cols, files = load_col_names_and_files_from_csv(args.csv[0])
     validate_files(files)
 
-    logger.info(f"Loaded column names: {cols}")
+    logger.info(f"Loaded column names:")
+    for col in cols:
+        logger.info(f"    {col}")
+
     logger.info(f"Loaded the following Pickaxe files:")
     for pik_file in files:
         logger.info(f"    {pik_file}")
@@ -194,19 +204,31 @@ if __name__ == "__main__":
 
     logger.info(f"Using {processes} processes to open datasets")
     
-    for col_name, pik_file in zip(cols, files):
-        logger.info(f"Adding {col_name} column")
-        with open(pik_file, "rb") as f:
-            pk = pickle.load(f)
-            df = add_pickaxe_run_to_df(df, pk, col_name, processes)
-        
-            # Finally delete the pickaxe object and call for garbage collection
-            del pk
-            gc.collect()
-            logger.info(f"Done adding {col_name} to dataframe")
+    try:
+        for col_name, pik_file in zip(cols, files):
+            logger.info(f"Adding {col_name} column")
+            with open(pik_file, "rb") as f:
+                pk = pickle.load(f)
+                df = add_pickaxe_run_to_df(df, pk, col_name, processes)
+                df.to_parquet(args.outfile)
+            
+                # Finally delete the pickaxe object and call for garbage collection
+                del pk
+                gc.collect()
+                logger.info(f"Done adding {col_name} to dataframe")
+                logger.info(f"dataframe memory: {df.memory_usage(index=True).sum() * 1e-6}")
+    except Exception as e:
+        logger.error(f"Experienced an error when writing {col_name} to dataframe")
+        logger.error("Intermediate dataframe has been written to disk")
+        logger.error(f"{str(e)}")
+        logger.error(f"{traceback.format_exc()}")
+        raise e
 
-    logger.info(f"Saving dataframe as pickle to {__location__}/{args[1]}")
-    with open(f"{__location__}/{args[1]}", "wb") as outfile:
-        pickle.dump(df, outfile)
+
+    # logger.info(f"Saving dataframe as pickle to {__location__}/{args[1]}")
+    # with open(f"{__location__}/{args[1]}", "wb") as outfile:
+    #     pickle.dump(df, outfile)
+    
+    logger.info(f"Finished creating dataframe")
 
     print("Done computing the pandas dataframe")
