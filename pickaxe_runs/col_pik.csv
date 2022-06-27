@@ -1,0 +1,16 @@
+column_name,pickle_path
+unfiltered,/homes/mgiammar/Documents/MINE-Database/pickaxe_runs/2022-06-16 22:11:44/pickaxe_run gen 3 of 4.pik
+JVCI_3gen_MW400,/homes/mgiammar/Documents/MINE-Database/pickaxe_runs/JVCI_3gen_MW400/pickaxe_run gen 3 of 3.pik
+JVCI_3gen_MW600,/homes/mgiammar/Documents/MINE-Database/pickaxe_runs/JVCI_3gen_MW600/pickaxe_run gen 3 of 3.pik
+JVCI_3gen_MW800,/homes/mgiammar/Documents/MINE-Database/pickaxe_runs/JVCI_3gen_MW800/pickaxe_run gen 3 of 3.pik
+JVCI_3gen_MW1000,/homes/mgiammar/Documents/MINE-Database/pickaxe_runs/JVCI_3gen_MW1000/pickaxe_run gen 3 of 3.pik
+JVCI_3gen_MW1200,/homes/mgiammar/Documents/MINE-Database/pickaxe_runs/JVCI_3gen_MW1200/pickaxe_run gen 3 of 3.pik
+JVCI_3gen_cluster.05,/homes/mgiammar/Documents/MINE-Database/pickaxe_runs/JVCI_3gen_cluster05/pickaxe_run gen 3 of 3.pik
+JVCI_3gen_cluster.1,/homes/mgiammar/Documents/MINE-Database/pickaxe_runs/JVCI_3gen_cluster1/pickaxe_run gen 3 of 3.pik
+JVCI_3gen_cluster.2,/homes/mgiammar/Documents/MINE-Database/pickaxe_runs/JVCI_3gen_cluster2/pickaxe_run gen 3 of 3.pik
+JVCI_4gen_cluster.3,/homes/mgiammar/Documents/MINE-Database/pickaxe_runs/JVCI_4gen_cluster3/pickaxe_run gen 4 of 3.pik
+JVCI_4gen_cluster.4,/homes/mgiammar/Documents/MINE-Database/pickaxe_runs/JVCI_4gen_cluster4/pickaxe_run gen 4 of 4.pik
+JVCI_7gen_random10k,/homes/mgiammar/Documents/MINE-Database/pickaxe_runs/JVCI_7gen_random10k/pickaxe_run gen 7 of 7.pik
+JVCI_7gen_random20k,/homes/mgiammar/Documents/MINE-Database/pickaxe_runs/JVCI_7gen_random20k/pickaxe_run gen 7 of 7.pik
+JVCI_7gen_random30k,/homes/mgiammar/Documents/MINE-Database/pickaxe_runs/JVCI_7gen_random30k/pickaxe_run gen 7 of 7.pik
+JVCI_7gen_random40k,/homes/mgiammar/Documents/MINE-Database/pickaxe_runs/JVCI_7gen_random40k/pickaxe_run gen 7 of 7.pik
