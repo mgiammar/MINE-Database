@@ -636,7 +636,7 @@ class Pickaxe:
         ):
 
             for _filter in self.filters:
-                _filter.apply_filter(self, processes, generation=generations)
+                _filter.apply_filter(self, processes, self.generation)
 
             if self.generation < generations:
                 # Prune network to only things that are expanded as white list

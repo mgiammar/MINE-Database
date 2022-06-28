@@ -227,7 +227,7 @@ class SimilarityClusteringFilter(Filter):
         nfps = len(smiles_by_cid)
         # Convert lower triangle matrix into one continuos list (dists)
         dists = list(itertools.chain.from_iterable(matrix))
-        clusters = Butina.ClusterData(dists, nfps, self.cutoff, isDistData=True)
+        clusters = Butina.ClusterData(dists, nfps, cutoff, isDistData=True)
         # NOTE: Could do multiprocessing on the cluster indexes to compound ids
         clusters = [
             [list(smiles_by_cid.keys())[cpd_idx] for cpd_idx in cluster]
@@ -331,12 +331,22 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
             clusters = self._generate_clusters(
                 smiles_by_cid, self._last_similarity_matrix, _cutoff
             )
+            clusters.sort(key=len, reverse=True)
+            print(len(clusters))
+            print(clusters)
+
 
             # Partition clusters into keep and dont keep
-            largest_bad_cluster_idx = -1  # Index of last cluster to re-cluster
-            while len(clusters[largest_bad_cluster_idx]) > _cluster_size:
-                largest_bad_cluster_idx -= 1
-            
+            largest_bad_cluster_idx = 0  # Index of last cluster to re-cluster
+            while len(clusters[largest_bad_cluster_idx]) <= _cluster_size:
+                largest_bad_cluster_idx += 1
+                # Check to make sure no index out of range
+                if largest_bad_cluster_idx > len(clusters):
+                    logger.warn("No clusters found above the given threshold")
+                    logger.warn("Clustering using all clusters")
+                    largest_bad_cluster_idx = 0
+                    break
+        
             good_clusters = clusters[largest_bad_cluster_idx:]
 
             # Select compounds to keep
@@ -346,7 +356,7 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
                     np.random.choice(
                         cluster,
                         replace=False,
-                        size=min(self.compounds_selected_per_cluster, len(cluster))
+                        size=min(_cpds_per_cluster, len(cluster))
                     )
                 )
             cpd_ids_to_keep.union(round_compound_ids)
@@ -355,10 +365,14 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
             selected_compound_idxs = [
                 list(smiles_by_cid.keys()).index(cid) for cid in round_compound_ids
             ]
-            _ = [smiles_by_cid.pop(cid) for cid in selected_compound_idxs]
+            _ = [smiles_by_cid.pop(cid) for cid in round_compound_ids]
             self._last_similarity_matrix = self.remove_indexes_from_lower_tri_matrix(
                 self._last_similarity_matrix, selected_compound_idxs
             )
+
+            if len(self._last_similarity_matrix) == 0:
+                logger.warn("Sequential clustering finished early. Exiting loop")
+                break
 
         # Set Expand to true for compounds ids in the cpd_ids_to_keep set
         for cp_id in cpd_ids_to_keep:
@@ -369,23 +383,27 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
 
         return cpds_remove_set, rxn_remove_set
 
-        def remove_indexes_from_lower_tri_matrix(self, mat, indexes):
-            """Removes indexes at rows and 'columns' of lower triangular matrix"""
-            # NOTE: Matrix should be sorted by length
-            indexes.sort()  # Need to be sorted so can iterate in reverse order
-            
-            # Remove rows
-            _ = [mat.pop(i) for i in indexes[::-1]]
+    def remove_indexes_from_lower_tri_matrix(self, mat, indexes):
+        """Removes indexes at rows and 'columns' of lower triangular matrix"""
+        # NOTE: Matrix should be sorted by length
+        indexes.sort()  # Need to be sorted so can iterate in reverse order
+        
+        # Make sure last matrix index is not in indexes, will cause index out of bounds
+        if indexes[-1] == len(mat):
+            indexes.pop(-1)
 
-            # Remove 'columns'
-            for i, row in enumerate(mat):
-                # Get indexes within range of row lengths
-                delete_indexes = np.asarray(indexes)[
-                    np.where(np.asarray(indexes) < len(row))
-                ]
-                mat[i] = list(np.delete(row, delete_indexes))
+        # Remove rows
+        _ = [mat.pop(i) for i in indexes[::-1]]
 
-            return mat
+        # Remove 'columns'
+        for i, row in enumerate(mat):
+            # Get indexes within range of row lengths
+            delete_indexes = np.asarray(indexes)[
+                np.where(np.asarray(indexes) < len(row))
+            ]
+            mat[i] = list(np.delete(row, delete_indexes))
+
+        return mat
  
 
 

@@ -11,4 +11,5 @@ from minedatabase.filters.similarity import (
 # from minedatabase.filters.toxicity import ToxicityFilter
 
 from minedatabase.filters.similarity_sampling import SimilarityClusteringFilter
+from minedatabase.filters.similarity_sampling import MultiRoundSimilarityClusteringFilter
 from minedatabase.filters.random_subselection import RandomSubselectionFilter
