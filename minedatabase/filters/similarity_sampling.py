@@ -115,7 +115,7 @@ class SimilarityClusteringFilter(Filter):
         otherwise.
         """
         # NOTE: Could have made one bool expression, but more comprehensible to split up
-        if self.generation == 0:
+        if self.generation <= 0:
             return False
         
         if self.generation_list is None:
@@ -332,20 +332,22 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
                 smiles_by_cid, self._last_similarity_matrix, _cutoff
             )
             clusters.sort(key=len, reverse=True)
-            print(len(clusters))
-            print(clusters)
 
 
             # Partition clusters into keep and dont keep
-            largest_bad_cluster_idx = 0  # Index of last cluster to re-cluster
-            while len(clusters[largest_bad_cluster_idx]) <= _cluster_size:
-                largest_bad_cluster_idx += 1
-                # Check to make sure no index out of range
-                if largest_bad_cluster_idx > len(clusters):
-                    logger.warn("No clusters found above the given threshold")
-                    logger.warn("Clustering using all clusters")
-                    largest_bad_cluster_idx = 0
-                    break
+            if len(clusters) == 0:
+                logger.warn("No clusters created. Skipping")
+                return set(), set()
+            else:
+                largest_bad_cluster_idx = 0  # Index of last cluster to re-cluster
+                while len(clusters[largest_bad_cluster_idx]) <= _cluster_size:
+                    largest_bad_cluster_idx += 1
+                    # Check to make sure no index out of range
+                    if largest_bad_cluster_idx > len(clusters):
+                        logger.warn("No clusters found above the given threshold")
+                        logger.warn("Clustering using all clusters")
+                        largest_bad_cluster_idx = 0
+                        break
         
             good_clusters = clusters[largest_bad_cluster_idx:]
 
