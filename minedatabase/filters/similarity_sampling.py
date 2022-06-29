@@ -59,10 +59,10 @@ class SimilarityClusteringFilter(Filter):
         (int) max_compounds: Maximum number of compounds to try and apply filter to.
             If the number of new compounds exceeds this value, the filter will not be
             applied  TODO: Make None have no restriction
-        (bool) strict_filter: If True, the filter will return a compound ID set for
-            compounds to remove. Otherwise an empty set will be returned and only the 
-            compounds selected will be marked for expansion. Default is True
-            TODO implement this.
+        # (bool) strict_filter: If True, the filter will return a compound ID set for
+        #     compounds to remove. Otherwise an empty set will be returned and only the 
+        #     compounds selected will be marked for expansion. Default is True
+        #     TODO implement this.
     """
 
     def __init__(
@@ -73,7 +73,6 @@ class SimilarityClusteringFilter(Filter):
         similarity_metric="default",
         generation_list=None,
         max_compounds=10000,
-        strict_filter=True,
     ):
         fprint_kwargs = {} if fprint_kwargs is None else fprint_kwargs
         # TODO: Setup similarity metric
@@ -85,7 +84,6 @@ class SimilarityClusteringFilter(Filter):
         self.compounds_selected_per_cluster = compounds_selected_per_cluster
         self.max_compounds = max_compounds
 
-        self.strict_filter = strict_filter
         self.fprint_kwargs = fprint_kwargs
         self.similarity_metric = similarity_metric  # String
         similarity_metric_func = None
@@ -103,7 +101,6 @@ class SimilarityClusteringFilter(Filter):
         logger.info(f"Compounds per cluster:  {self.compounds_selected_per_cluster}")
         logger.info(f"Fingerprint kwargs:     {self.fprint_kwargs}")
         logger.info(f"Similarity metric:      {self.similarity_metric}")
-        logger.info(f"Strict Filter:          {self.strict_filter}")
     
     def _post_print_footer(self, pickaxe: Pickaxe) -> None:
         """Post filtering info"""
@@ -163,9 +160,7 @@ class SimilarityClusteringFilter(Filter):
             pickaxe.compounds[cpd_id]["Expand"] = cpd_id in cpd_ids_to_keep
 
         # Return IDs of all compounds in this generation to not keep
-        if self.strict_filter:
-            cpds_remove_set = set(smiles_by_cid.keys()).difference(cpd_ids_to_keep)
-
+        cpds_remove_set = set(smiles_by_cid.keys()).difference(cpd_ids_to_keep)
         return cpds_remove_set, rxn_remove_set
 
     def _generate_similarity_matrix(self, smiles_by_cid, processes):
@@ -225,8 +220,17 @@ class SimilarityClusteringFilter(Filter):
             (list) clusters: Clusters with compound ids representing compounds
         """
         nfps = len(smiles_by_cid)
+
+        print("smiles length", nfps)
+        print("matrix rows", len(matrix))
+
+
         # Convert lower triangle matrix into one continuos list (dists)
         dists = list(itertools.chain.from_iterable(matrix))
+
+        print("matrix elements", len(dists))
+        print("equation", nfps*(nfps-1)/2)
+
         clusters = Butina.ClusterData(dists, nfps, cutoff, isDistData=True)
         # NOTE: Could do multiprocessing on the cluster indexes to compound ids
         clusters = [
@@ -310,9 +314,9 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
             if cpd["Generation"] == pickaxe.generation
         }
 
-        # Set expand to false for all compounds. Selected compounds will be set to True
-        for cpd_id in smiles_by_cid.keys():
-            pickaxe.compounds[cpd_id]["Expand"] = False
+        # # Set expand to false for all compounds. Selected compounds will be set to True
+        # for cpd_id in smiles_by_cid.keys():
+        #     pickaxe.compounds[cpd_id]["Expand"] = False
 
         if self.max_compounds is not None and len(smiles_by_cid) > self.max_compounds:
             logger.warn("Number of compounds too long. Skipping clustering")
@@ -331,32 +335,24 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
             clusters = self._generate_clusters(
                 smiles_by_cid, self._last_similarity_matrix, _cutoff
             )
-            clusters.sort(key=len, reverse=True)
+            # clusters.sort(key=len, reverse=True)
 
 
             # Partition clusters into keep and dont keep
             if len(clusters) == 0:
                 logger.warn("No clusters created. Skipping")
-                return set(), set()
-            else:
-                largest_bad_cluster_idx = 0  # Index of last cluster to re-cluster
-                while len(clusters[largest_bad_cluster_idx]) <= _cluster_size:
-                    largest_bad_cluster_idx += 1
-                    # Check to make sure no index out of range
-                    if largest_bad_cluster_idx >= len(clusters):
-                        logger.warn(f"No clusters found above the given threshold {_cluster_size}")
-                        logger.warn("Clustering using all clusters")
-                        largest_bad_cluster_idx = None
-                        break
 
-            if largest_bad_cluster_idx is None:
-                continue
-        
-            good_clusters = clusters[largest_bad_cluster_idx:]
-
-            # Select compounds to keep
+            # Partition into recluster and drop while selection compounds to keep
+            drop_cids = []
+            recluster_cids = []
             round_compound_ids = []
-            for cluster in good_clusters:
+            for cluster in clusters:
+                if len(cluster) < _cluster_size:
+                    recluster_cids.extend(cluster)
+                    continue
+                
+                # Select from compounds from cluster and do not keep cluster
+                drop_cids.extend(cluster)
                 round_compound_ids.extend(
                     np.random.choice(
                         cluster,
@@ -364,13 +360,13 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
                         size=min(_cpds_per_cluster, len(cluster))
                     )
                 )
-            cpd_ids_to_keep.union(round_compound_ids)
+                cpd_ids_to_keep.union(round_compound_ids)
 
             # Drop selected compounds from matrix and reindex smiles_by_cid
             selected_compound_idxs = [
-                list(smiles_by_cid.keys()).index(cid) for cid in round_compound_ids
+                list(smiles_by_cid.keys()).index(cid) for cid in drop_cids
             ]
-            _ = [smiles_by_cid.pop(cid) for cid in round_compound_ids]
+            _ = [smiles_by_cid.pop(cid) for cid in drop_cids]
             self._last_similarity_matrix = self.remove_indexes_from_lower_tri_matrix(
                 self._last_similarity_matrix, selected_compound_idxs
             )
@@ -380,25 +376,33 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
                 break
 
         # Set Expand to true for compounds ids in the cpd_ids_to_keep set
-        for cp_id in cpd_ids_to_keep:
-            pickaxe.compounds[cp_id]["Expand"] = True
+        # for cp_id in cpd_ids_to_keep:
+        #     pickaxe.compounds[cp_id]["Expand"] = True
 
-        if self.strict_filter:
-            cpds_remove_set = set(smiles_by_cid.keys()).difference(cpd_ids_to_keep)
-
+        cpds_remove_set = set(smiles_by_cid.keys()).difference(cpd_ids_to_keep)
         return cpds_remove_set, rxn_remove_set
 
-    def remove_indexes_from_lower_tri_matrix(self, mat, indexes):
+    def remove_indexes_from_lower_tri_matrix(self, matrix, indexes):
         """Removes indexes at rows and 'columns' of lower triangular matrix"""
-        # NOTE: Matrix should be sorted by length
+        # NOTE: This method has become messy. Probably a cleaner way of writing this
+        # but oh well...
+        mat = matrix.copy()
+        num_rows = len(mat) + 1  # +1 since [0, 0] of full mat does not have entry
+        if len(indexes) == 0:
+            return mat
+
         indexes.sort()  # Need to be sorted so can iterate in reverse order
-        
-        # Make sure last matrix index is not in indexes, will cause index out of bounds
-        if indexes[-1] == len(mat):
-            indexes.pop(-1)
 
         # Remove rows
-        _ = [mat.pop(i) for i in indexes[::-1]]
+        _ = [mat.pop(i - 1) for i in indexes[::-1] if i - 1 >= 0]
+
+        # Now remove the last index if it is the length of the matrix, otherwise might
+        # get an out of bounds error
+        if indexes[-1] + 1 == num_rows:
+            indexes.pop(-1)
+
+        if len(indexes) == 0:
+            return mat
 
         # Remove 'columns'
         for i, row in enumerate(mat):
@@ -407,6 +411,10 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
                 np.where(np.asarray(indexes) < len(row))
             ]
             mat[i] = list(np.delete(row, delete_indexes))
+
+        # Edge case for removing index zero
+        if 0 in indexes:
+            mat.pop(0)
 
         return mat
  
