@@ -407,6 +407,9 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
         if len(indexes) == 0:
             return mat
 
+        if len(mat) == 0:
+            return []
+
         # Remove 'columns'
         for i, row in enumerate(mat):
             # Get indexes within range of row lengths
