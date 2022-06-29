@@ -107,18 +107,18 @@ class SimilarityClusteringFilter(Filter):
         logger.info(f"Done filtering Generation {pickaxe.generation}")
         logger.info("-----------------------------------------------")
 
-    def _should_filter_this_generation(self):
-        """Returns True if this filter should be applied for this generation, False
-        otherwise.
-        """
-        # NOTE: Could have made one bool expression, but more comprehensible to split up
-        if self.generation <= 0:
-            return False
+    # def _should_filter_this_generation(self):
+    #     """Returns True if this filter should be applied for this generation, False
+    #     otherwise.
+    #     """
+    #     # NOTE: Could have made one bool expression, but more comprehensible to split up
+    #     if self.generation <= 0:
+    #         return False
         
-        if self.generation_list is None:
-            return True
+    #     if self.generation_list is None:
+    #         return True
 
-        return (self.generation - 1) in self.generation_list
+    #     return (self.generation - 1) in self.generation_list
 
     def _choose_items_to_filter(self, pickaxe, processes):
         """Creates clusters based on fingerprint similarity using RDKit and samples 

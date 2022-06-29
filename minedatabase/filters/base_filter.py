@@ -71,6 +71,10 @@ class Filter(metaclass=abc.ABCMeta):
 
         self.generation = generation
 
+        if not self._should_filter_this_generation():
+            logger.info(f"Not applying {self.filter_name} this generation")
+            
+
         if print_on:
             n_total = self._get_n(pickaxe, "total")
             self._pre_print_header(pickaxe)
@@ -88,6 +92,28 @@ class Filter(metaclass=abc.ABCMeta):
             n_filtered = self._get_n(pickaxe, "filtered")
             self._post_print(pickaxe, n_total, n_filtered, time.time() - time_start)
             self._post_print_footer(pickaxe)
+
+    def _should_filter_this_generation(self):
+        """Method used to check if a filter should be applied this generation"""
+        if not hasattr(self, "seen_generations"):
+            self.seen_generations = []
+
+        # Do not filter on zeroth generation
+        if self.generation <= 0:
+            return False
+
+        # Do not filter if the generation has already been seen
+        if self.generation in self.seen_generations:
+            self.seen_generations.append(self.generation)
+            return False
+
+        self.seen_generations.append(self.generation)
+
+        # Filter if no generation_list attribute or if attribute is None
+        if not hasattr(self, "generation_list") or self.generation_list is None:
+            return True
+
+        return (self.generation - 1) in self.generation_list
 
     def _pre_print_header(self, pickaxe: Pickaxe) -> None:
         """Print header before filtering.
