@@ -32,16 +32,15 @@ class RandomSubselectionFilter(Filter):
             Maximum number of compounds to keep from the generation
         (list) generation_list:
             Optional list of integers corresponding to which generations to apply filter to
-        (bool) strict_filter: If True, the filter will return a compound ID set for
-            compounds to remove. Otherwise an empty set will be returned and only the 
-            compounds selected will be marked for expansion. Default is True
+        # (bool) strict_filter: If True, the filter will return a compound ID set for
+        #     compounds to remove. Otherwise an empty set will be returned and only the 
+        #     compounds selected will be marked for expansion. Default is True
     """
 
-    def __init__(self, max_compounds, generation_list=None, strict_filter=True) -> None:
+    def __init__(self, max_compounds, generation_list=None) -> None:
         self._filter_name = "Random Subselection"
         self.max_compounds = max_compounds
         self.generation_list = generation_list
-        self.strict_filter = strict_filter
 
     @property
     def filter_name(self) -> str:
@@ -94,8 +93,6 @@ class RandomSubselectionFilter(Filter):
         for cpd_id in pickaxe.compounds.keys():
             pickaxe.compounds[cpd_id]["Expand"] = cpd_id in keep_ids
 
-        if self.strict_filter:
-            cpds_remove_set =  set(cpd_ids).difference(set(keep_ids))
-
+        cpds_remove_set =  set(cpd_ids).difference(set(keep_ids))
         return cpds_remove_set, rxn_remove_set
         
