@@ -130,8 +130,8 @@ class SimilarityClusteringFilter(Filter):
         rxn_remove_set = set()
 
         # Do not filter on zeroth generation
-        if not self._should_filter_this_generation():
-            return cpds_remove_set, rxn_remove_set
+        # if not self._should_filter_this_generation():
+        #     return cpds_remove_set, rxn_remove_set
 
         # Dictionary with compound id as key and smiles for that compound as value
         smiles_by_cid = {
@@ -221,15 +221,8 @@ class SimilarityClusteringFilter(Filter):
         """
         nfps = len(smiles_by_cid)
 
-        print("smiles length", nfps)
-        print("matrix rows", len(matrix))
-
-
         # Convert lower triangle matrix into one continuos list (dists)
         dists = list(itertools.chain.from_iterable(matrix))
-
-        print("matrix elements", len(dists))
-        print("equation", nfps*(nfps-1)/2)
 
         clusters = Butina.ClusterData(dists, nfps, cutoff, isDistData=True)
         # NOTE: Could do multiprocessing on the cluster indexes to compound ids
@@ -305,18 +298,19 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
         rxn_remove_set = set()
 
         # Do not filter on zeroth generation
-        if not self._should_filter_this_generation():
-            return cpds_remove_set, rxn_remove_set
+        # if not self._should_filter_this_generation():
+        #     return cpds_remove_set, rxn_remove_set
 
         # Dictionary with compound id as key and smiles for that compound as value
         smiles_by_cid = {
              cpd_id: cpd["SMILES"] for cpd_id, cpd in pickaxe.compounds.items()
             if cpd["Generation"] == pickaxe.generation
         }
+        all_cids = set(smiles_by_cid.keys())
 
-        # # Set expand to false for all compounds. Selected compounds will be set to True
-        # for cpd_id in smiles_by_cid.keys():
-        #     pickaxe.compounds[cpd_id]["Expand"] = False
+        # Set expand to false for all compounds. Selected compounds will be set to True
+        for cpd_id in smiles_by_cid.keys():
+            pickaxe.compounds[cpd_id]["Expand"] = False
 
         if self.max_compounds is not None and len(smiles_by_cid) > self.max_compounds:
             logger.warn("Number of compounds too long. Skipping clustering")
@@ -336,7 +330,16 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
                 smiles_by_cid, self._last_similarity_matrix, _cutoff
             )
             # clusters.sort(key=len, reverse=True)
-
+            cluster_lengths = [len(cs) for cs in clusters]
+            logger.info(f"Cluster info for {len(smiles_by_cid)} compounds")
+            logger.info(f"Cutoff:              {_cutoff}")
+            logger.info(f"Cluster:             {_cpds_per_cluster}")
+            logger.info(f"Size:                {_cluster_size}")
+            logger.info(f"Number of Clusters:  {len(clusters)}")
+            logger.info(f"Cluster size max     {np.max(cluster_lengths)}")
+            logger.info(f"Cluster size min     {np.min(cluster_lengths)}")
+            logger.info(f"Cluster size average {np.average(cluster_lengths)}")
+            logger.info(f"Cluster size std     {np.std(cluster_lengths)}")
 
             # Partition clusters into keep and dont keep
             if len(clusters) == 0:
@@ -360,8 +363,8 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
                         size=min(_cpds_per_cluster, len(cluster))
                     )
                 )
-                cpd_ids_to_keep.union(round_compound_ids)
 
+            cpd_ids_to_keep = cpd_ids_to_keep.union(set(round_compound_ids))
             # Drop selected compounds from matrix and reindex smiles_by_cid
             selected_compound_idxs = [
                 list(smiles_by_cid.keys()).index(cid) for cid in drop_cids
@@ -374,12 +377,12 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
             if len(self._last_similarity_matrix) == 0:
                 logger.warn("Sequential clustering finished early. Exiting loop")
                 break
-
+#
         # Set Expand to true for compounds ids in the cpd_ids_to_keep set
-        # for cp_id in cpd_ids_to_keep:
-        #     pickaxe.compounds[cp_id]["Expand"] = True
+        for cp_id in cpd_ids_to_keep:
+            pickaxe.compounds[cp_id]["Expand"] = True
 
-        cpds_remove_set = set(smiles_by_cid.keys()).difference(cpd_ids_to_keep)
+        cpds_remove_set = all_cids.difference(cpd_ids_to_keep)
         return cpds_remove_set, rxn_remove_set
 
     def remove_indexes_from_lower_tri_matrix(self, matrix, indexes):

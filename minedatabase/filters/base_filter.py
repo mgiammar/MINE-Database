@@ -73,6 +73,7 @@ class Filter(metaclass=abc.ABCMeta):
 
         if not self._should_filter_this_generation():
             logger.info(f"Not applying {self.filter_name} this generation")
+            return
             
 
         if print_on:
@@ -100,10 +101,12 @@ class Filter(metaclass=abc.ABCMeta):
 
         # Do not filter on zeroth generation
         if self.generation <= 0:
+            logger.info("Not filtering zeroth generation")
             return False
 
         # Do not filter if the generation has already been seen
         if self.generation in self.seen_generations:
+            logger.info("Generation has already been filtered")
             self.seen_generations.append(self.generation)
             return False
 
