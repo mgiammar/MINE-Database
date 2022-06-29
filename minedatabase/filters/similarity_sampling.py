@@ -287,7 +287,7 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
         logger.info(f"Creating clusters for {n_compounds} using")
         logger.info(f"Tanimoto cutoff:       {self.cutoff}")
         logger.info(f"Compounds per cluster:  {self.compounds_selected_per_cluster}")
-        logger.info(f"Compounds per cluster:  {self.compounds_selected_per_cluster}")
+        logger.info(f"Cluster size cutoff:    {self.cluster_size_cutoff}")
         logger.info(f"Fingerprint kwargs:     {self.fprint_kwargs}")
         logger.info(f"Similarity metric:      {self.similarity_metric}")
 
@@ -343,11 +343,14 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
                 while len(clusters[largest_bad_cluster_idx]) <= _cluster_size:
                     largest_bad_cluster_idx += 1
                     # Check to make sure no index out of range
-                    if largest_bad_cluster_idx > len(clusters):
-                        logger.warn("No clusters found above the given threshold")
+                    if largest_bad_cluster_idx >= len(clusters):
+                        logger.warn(f"No clusters found above the given threshold {_cluster_size}")
                         logger.warn("Clustering using all clusters")
-                        largest_bad_cluster_idx = 0
+                        largest_bad_cluster_idx = None
                         break
+
+            if largest_bad_cluster_idx is None:
+                continue
         
             good_clusters = clusters[largest_bad_cluster_idx:]
 

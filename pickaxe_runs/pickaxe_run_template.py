@@ -11,6 +11,7 @@ from rdkit import Chem
 import minedatabase
 
 from minedatabase.filters import MCSFilter, MetabolomicsFilter, MWFilter
+from minedatabase.filters import MultiRoundSimilarityClusteringFilter
 from minedatabase.filters import SimilarityClusteringFilter
 # from minedatabase.filters.thermodynamics import ThermoFilter
 from minedatabase.pickaxe import Pickaxe
@@ -270,8 +271,8 @@ if __name__ == "__main__":
 
     rule_file = "/homes/mgiammar/Documents/MINE-Database/minedatabase/data/original_rules/EnzymaticReactionRules.tsv"
     coreactant_file = "/homes/mgiammar/Documents/MINE-Database/minedatabase/data/original_rules/EnzymaticCoreactants.tsv"
-    starting_compounds_file = "/homes/mgiammar/Documents/MINE-Database/jvci_random_7.csv"
-    # starting_compounds_file = "/homes/mgiammar/Documents/MINE-Database/jvci_syn3A.csv"
+    # starting_compounds_file = "/homes/mgiammar/Documents/MINE-Database/jvci_random_7.csv"
+    starting_compounds_file = "/homes/mgiammar/Documents/MINE-Database/jvci_syn3A.csv"
 
     logger.info(f"-------- Start of Pickaxe Run --------")
     logger.info(f"Creating Pickaxe object with")
@@ -296,16 +297,24 @@ if __name__ == "__main__":
     # )
     # pk.filters = [cluster_filter]
 
-    random_filter = RandomSubselectionFilter(
-        max_compounds=10000, generation_list=[1, 2, 3, 4, 5, 6, 7]
+    # random_filter = RandomSubselectionFilter(
+    #     max_compounds=10000, generation_list=[1, 2, 3, 4, 5, 6, 7]
+    # )
+    multi_cluster = MultiRoundSimilarityClusteringFilter(
+        cutoff=[0.1, 0.2, 0.3, 0.4],
+        cluster_size_cutoff=[80, 40, 20, 10],
+        compounds_selected_per_cluster=[2, 2, 2, 2],
+        generation_list=None,
+        max_compounds=75000,
     )
+    pk.filters=[multi_cluster]
 
     # TODO: Add more info about filter objects, possibly within the filter file
     logger.info(f"Added {len(pk.filters)} to the Pickaxe object")
 
     # NOTE: REMEMBER TO NOT CALL transform_all USE CUSTOM transform_pickaxe_compounds
-    processes = os.cpu_count() / 20
-    generations = 7
+    processes = os.cpu_count() // 8
+    generations = 3
 
     logger.info(f"-------- Start of Transformation --------")
     logger.info(f"Generations: {generations}")

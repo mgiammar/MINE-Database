@@ -200,7 +200,7 @@ if __name__ == "__main__":
 
     logger.info(f"Loaded default dataframe")
 
-    processes = multiprocessing.cpu_count() // 2
+    processes = args.processes
 
     logger.info(f"Using {processes} processes to open datasets")
     
