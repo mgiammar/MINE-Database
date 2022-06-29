@@ -77,8 +77,8 @@ class RandomSubselectionFilter(Filter):
         rxn_remove_set = set()
 
         generation = pickaxe.generation
-        if not self._should_filter_this_generation():
-            return cpds_remove_set, rxn_remove_set
+        # if not self._should_filter_this_generation():
+        #     return cpds_remove_set, rxn_remove_set
 
         cpd_ids = [
             cpd_id for cpd_id, cpd in pickaxe.compounds.items()
