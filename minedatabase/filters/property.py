@@ -56,6 +56,14 @@ class MWFilter(Filter):
     def filter_name(self) -> str:
         return self._filter_name
 
+    def get_filter_fields_as_dict(self) -> dict:
+        """Returns property info about filter as a dict"""
+        return {
+            "filter_name": self._filter_name,
+            "mw min": self.min_MW,
+            "mw max": self.max_MW,
+        }
+
     def _choose_items_to_filter(self, pickaxe: Pickaxe, processes: int = 1) -> Set[str]:
         """
         Check the compounds against the MW constraints and return

@@ -93,6 +93,17 @@ class SimilarityClusteringFilter(Filter):
     def filter_name(self) -> str:
         return self._filter_name
 
+    def get_filter_fields_as_dict(self) -> dict:
+        """Returns property info about filter as a dict"""
+        return {
+            "filter_name": self._filter_name,
+            "Tanimoto cutoff": self.cutoff,
+            "compounds per cluster": self.generation_list,
+            "max compounds": self.max_compounds,
+            "generation list": self.generation_list
+            # NOTE: Add more values as similarity clustering updated
+        }
+
     def _pre_print(self) -> None:
         """Print and log before filtering"""
         n_compounds = None
@@ -277,6 +288,18 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
             len(self.cluster_size_cutoff)
         ):
             raise ValueError("Lists passed do not have the same lengths")
+
+    def get_filter_fields_as_dict(self) -> dict:
+        """Returns property info about filter as a dict"""
+        return {
+            "filter_name": self._filter_name,
+            "Tanimoto cutoff": self.cutoff,
+            "compounds per cluster": self.compounds_selected_per_cluster,
+            "cluster size cutoff": self.cluster_size_cutoff,
+            "max compounds": self.max_compounds,
+            "generation list": self.generation_list
+            # NOTE: Add more values as similarity clustering updated
+        }
 
     def _pre_print(self) -> None:
         """Print and log before filtering"""

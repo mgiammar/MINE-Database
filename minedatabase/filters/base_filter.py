@@ -94,6 +94,15 @@ class Filter(metaclass=abc.ABCMeta):
             self._post_print(pickaxe, n_total, n_filtered, time.time() - time_start)
             self._post_print_footer(pickaxe)
 
+    @abc.abstractmethod
+    def get_filter_fields_as_dict(self) -> dict:
+        """Returns information about the filter type and associated parameter values
+        as a dictionary with each key describing the attribute type and value being the
+        value of that attribute. Implemented so that filter data can be added to a
+        mongo database.
+        """
+        raise NotImplementedError
+
     def _should_filter_this_generation(self):
         """Method used to check if a filter should be applied this generation"""
         if not hasattr(self, "seen_generations"):

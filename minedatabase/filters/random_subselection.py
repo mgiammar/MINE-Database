@@ -46,6 +46,15 @@ class RandomSubselectionFilter(Filter):
     def filter_name(self) -> str:
         return self._filter_name
 
+    def get_filter_fields_as_dict(self) -> dict:
+        """Returns property info about filter as a dict"""
+        return {
+            "filter_name": self._filter_name,
+            "max compounds": self.max_compounds,
+            "generation list": self.generation_list
+
+        }
+
     def _pre_print(self) -> None:
         """Print and log before filtering"""
         n_compounds = None
