@@ -97,10 +97,11 @@ class SimilarityClusteringFilter(Filter):
         """Returns property info about filter as a dict"""
         return {
             "filter_name": self._filter_name,
-            "Tanimoto cutoff": self.cutoff,
-            "compounds per cluster": self.generation_list,
-            "max compounds": self.max_compounds,
-            "generation list": self.generation_list
+            "cutoff": self.cutoff,
+            "compounds_selected_per_cluster": self.compounds_selected_per_cluster,
+            "generation_list": self.generation_list,
+            "max_compounds": self.max_compounds,
+            "generation_list": self.generation_list
             # NOTE: Add more values as similarity clustering updated
         }
 
@@ -293,11 +294,11 @@ class MultiRoundSimilarityClusteringFilter(SimilarityClusteringFilter):
         """Returns property info about filter as a dict"""
         return {
             "filter_name": self._filter_name,
-            "Tanimoto cutoff": self.cutoff,
-            "compounds per cluster": self.compounds_selected_per_cluster,
-            "cluster size cutoff": self.cluster_size_cutoff,
-            "max compounds": self.max_compounds,
-            "generation list": self.generation_list
+            "cutoff": self.cutoff,
+            "compounds_selected_per_cluster": self.compounds_selected_per_cluster,
+            "cluster_size_cutoff": self.cluster_size_cutoff,
+            "max_compounds": self.max_compounds,
+            "generation_list": self.generation_list
             # NOTE: Add more values as similarity clustering updated
         }
 

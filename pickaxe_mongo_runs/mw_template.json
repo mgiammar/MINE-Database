@@ -1,0 +1,10 @@
+{
+    "filters": [
+        {
+            "filter_name": "Molecular Weight",
+            "min_MW": 200,
+            "max_MW": 1000,
+            "generation_list": null
+        }
+    ]
+}

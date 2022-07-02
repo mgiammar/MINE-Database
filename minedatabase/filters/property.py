@@ -46,11 +46,13 @@ class MWFilter(Filter):
         self,
         min_MW: Union[float, None] = None,
         max_MW: Union[float, None] = None,
+        generation_list: Union[list, None] = None
     ) -> None:
         self._filter_name = "Molecular Weight"
 
         self.min_MW = min_MW or 0
         self.max_MW = max_MW or 100000
+        self.generation_list = generation_list
 
     @property
     def filter_name(self) -> str:
@@ -60,8 +62,8 @@ class MWFilter(Filter):
         """Returns property info about filter as a dict"""
         return {
             "filter_name": self._filter_name,
-            "mw min": self.min_MW,
-            "mw max": self.max_MW,
+            "min_MW": self.min_MW,
+            "max_MW": self.max_MW,
         }
 
     def _choose_items_to_filter(self, pickaxe: Pickaxe, processes: int = 1) -> Set[str]:

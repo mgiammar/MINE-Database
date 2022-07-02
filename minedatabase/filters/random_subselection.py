@@ -50,8 +50,8 @@ class RandomSubselectionFilter(Filter):
         """Returns property info about filter as a dict"""
         return {
             "filter_name": self._filter_name,
-            "max compounds": self.max_compounds,
-            "generation list": self.generation_list
+            "max_compounds": self.max_compounds,
+            "generation_list": self.generation_list
 
         }
 
