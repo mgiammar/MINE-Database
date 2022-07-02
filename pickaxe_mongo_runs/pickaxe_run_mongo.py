@@ -173,7 +173,12 @@ def transform_pickaxe_compounds(
                     run_info_id=run_info_id,
                 )
 
-                # TODO: update errored out field in pickaxe_run_info
+                run_col = pymongo.MongoClient(
+                    host=mongo_host, port=mongo_port
+                ).pickaxe_filtering.pickaxe_run_info
+                run_col.update_one(
+                    {"_id": run_info_id}, {"$set": {"errored_out": True}}
+                )
                 
                 logger.error(f"Successfully saved to mongo db at {mongo_url}")
                 logger.error(f"Elapsed time:     {str(datetime.timedelta(seconds=total_time))}")
@@ -199,7 +204,12 @@ def transform_pickaxe_compounds(
                     run_info_id=run_info_id,
                 )
 
-                # TODO: update errored out field in pickaxe_run_info
+                run_col = pymongo.MongoClient(
+                    host=mongo_host, port=mongo_port
+                ).pickaxe_filtering.pickaxe_run_info
+                run_col.update_one(
+                    {"_id": run_info_id}, {"$set": {"errored_out": True}}
+                )
 
                 logger.error(f"Successfully saved to mongo db at {mongo_url}")
                 logger.error(f"Elapsed time:     {str(datetime.timedelta(seconds=total_time))}")
@@ -234,6 +244,13 @@ def transform_pickaxe_compounds(
 
     write_time = time.time() - write_start_time
     logger.info(f"Finished writing to database in {str(datetime.timedelta(seconds=write_time))} seconds")
+
+    run_col = pymongo.MongoClient(
+        host=mongo_host, port=mongo_port
+    ).pickaxe_filtering.pickaxe_run_info
+    run_col.update_one(
+        {"_id": run_info_id}, {"$set": {"completed": True}}
+    )
 
     logger.info(f"------- Pickaxe Run Complete -------")
     logger.info(f"Elapsed time:     {str(datetime.timedelta(seconds=total_time))}")
