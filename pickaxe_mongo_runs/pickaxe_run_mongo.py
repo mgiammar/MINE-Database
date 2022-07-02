@@ -261,7 +261,8 @@ def setup_logger(logpath: str) -> logging.Logger:
     logger object with name `run_pickaxe` and sets appropriate levels
     """
     logging.getLogger().setLevel(logging.INFO)
-    logfile = f"{__location__}/pk_run.log"
+    # logfile = f"{__location__}/pk_run.log"
+    logfile = logpath
     if(os.path.isfile(logfile)):
             os.remove(logfile)
     file_handler = logging.FileHandler(logfile)
@@ -643,7 +644,7 @@ if __name__ == "__main__":
     filter_file = args.filter
     if filter_file is not None:
         logger.info(f"Parsing filter file...")
-        filters = parse_filter_json()
+        filters = parse_filter_json(args.filter)
         pk.filter = filters
         logger.info(f"Added {len(filters)} to the Pickaxe object")
     else:
