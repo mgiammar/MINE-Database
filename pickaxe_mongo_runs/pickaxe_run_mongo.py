@@ -2,6 +2,7 @@ import argparse
 import datetime
 import functools
 import itertools
+import json
 import logging
 import multiprocessing
 import numpy as np
@@ -30,6 +31,7 @@ from pymongo import UpdateOne
 import modelseedpy
 with open("biochem.pik", "rb") as f:
     biochem = pickle.load(f)
+# biochem = modelseedpy.biochem.from_local("/Users/mgiammar/Documents/ModelSEEDDatabase")
 
 modelseed_inchikeys_full = {
     biochem.get_seed_compound(cpd_id).inchikey: cpd_id
@@ -160,7 +162,7 @@ def transform_pickaxe_compounds(
             logger.error(f"The run was stopped during generation {gen} of {generations} due to a ")
             logger.error(f"keyboard interrupt.")
             
-            if write_cpds_to_database:
+            if True:  # Currently hardcoded
                 logger.error(f"Attempting to save to save current progress to a mongo database")
 
                 save_to_mongo(
@@ -191,7 +193,8 @@ def transform_pickaxe_compounds(
             logger.error(f"{str(e)}")
             logger.error(f"{traceback.format_exc()}")
 
-            if write_cpds_to_database:
+            # if write_cpds_to_database:
+            if True:
                 logger.error(f"Attempting to save to save current progress to a mongo database")
 
                 save_to_mongo(
@@ -375,7 +378,7 @@ def parse_filter_json(filter_file: str) -> list:
     Returns:
         List of minedatabase Filter objects
     """
-    if not pathlib.Path(filter_path).is_file():
+    if not pathlib.Path(filter_file).is_file():
         msg = f"File {filter_file} is not a valid path."
         logger.error(msg)
         raise ValueError(msg)
@@ -405,7 +408,7 @@ def add_mongo_metadata_header(db, args, pk):
     pickaxe_run_info = db.pickaxe_run_info
 
     post = vars(args)
-    post["filters"] = [fil.get_filter_fields_as_dict for fil in pk.filters]
+    post["filters"] = [fil.get_filter_fields_as_dict() for fil in pk.filters]
     post["start_time"] = datetime.datetime.utcnow()
     post["completed"] = False
     post["errored_out"] = False
@@ -645,7 +648,7 @@ if __name__ == "__main__":
     if filter_file is not None:
         logger.info(f"Parsing filter file...")
         filters = parse_filter_json(args.filter)
-        pk.filter = filters
+        pk.filters = filters
         logger.info(f"Added {len(filters)} to the Pickaxe object")
     else:
         logger.info(f"No filters to add")

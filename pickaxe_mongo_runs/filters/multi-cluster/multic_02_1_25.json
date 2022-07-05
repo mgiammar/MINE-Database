@@ -1,0 +1,24 @@
+{
+    "filters": [
+        {
+            "filter_name": "Multi Round Similarity Clustering Filter",
+            "cutoff": [
+                0.02,
+                0.1,
+                0.25
+            ],
+            "compounds_selected_per_cluster": [
+                1,
+                2,
+                3
+            ],
+            "cluster_size_cutoff": [
+                50,
+                30,
+                0
+            ],
+            "max_compounds": 50000,
+            "generation_list": null
+        }
+    ]
+}

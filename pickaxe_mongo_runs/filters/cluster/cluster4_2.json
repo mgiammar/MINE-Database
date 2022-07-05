@@ -1,0 +1,11 @@
+{
+    "filters": [
+        {
+            "filter_name": "Similarity Clustering Filter",
+            "cutoff": 0.4,
+            "compounds_selected_per_cluster": 2,
+            "generation_list": null,
+            "max_compounds": 50000
+        }
+    ]
+}

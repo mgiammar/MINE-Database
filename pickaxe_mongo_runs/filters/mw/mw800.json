@@ -1,0 +1,9 @@
+{
+    "filters": [
+        {
+            "filter_name": "Molecular Weight",
+            "min_MW": 0,
+            "max_MW": 800
+        }
+    ]
+}

@@ -1,0 +1,9 @@
+{
+    "filters": [
+        {
+            "filter_name": "Random Subselection",
+            "max_compounds": 12345,
+            "generation_list": null
+        }
+    ]
+}
