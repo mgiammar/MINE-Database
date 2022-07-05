@@ -157,7 +157,7 @@ def transform_pickaxe_compounds(
         try:
             pk.transform_all(processes=processes, generations=gen)
 
-        except KeyboardInterrupt:
+        except KeyboardInterrupt as e:
             logger.error(f"------- Pickaxe Run Interrupted -------")
             logger.error(f"The run was stopped during generation {gen} of {generations} due to a ")
             logger.error(f"keyboard interrupt.")
@@ -184,6 +184,8 @@ def transform_pickaxe_compounds(
                 
                 logger.error(f"Successfully saved to mongo db at {mongo_url}")
                 logger.error(f"Elapsed time:     {str(datetime.timedelta(seconds=total_time))}")
+
+            raise e
 
         except Exception as e:
             logger.error(f"------- Pickaxe Run Errored Out -------")
