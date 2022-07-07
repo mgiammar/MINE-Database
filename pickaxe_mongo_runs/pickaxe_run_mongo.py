@@ -29,9 +29,9 @@ from pymongo import UpdateOne
 
 # Setup known compounds in ModelSEED
 import modelseedpy
-with open("biochem.pik", "rb") as f:
-    biochem = pickle.load(f)
-# biochem = modelseedpy.biochem.from_local("/Users/mgiammar/Documents/ModelSEEDDatabase")
+# with open("biochem.pik", "rb") as f:
+#     biochem = pickle.load(f)
+biochem = modelseedpy.biochem.from_local("/Users/mgiammar/Documents/ModelSEEDDatabase")
 
 modelseed_inchikeys_full = {
     biochem.get_seed_compound(cpd_id).inchikey: cpd_id
@@ -165,6 +165,12 @@ def transform_pickaxe_compounds(
             if True:  # Currently hardcoded
                 logger.error(f"Attempting to save to save current progress to a mongo database")
 
+                client = pymongo.MongoClient(host=mongo_host, port=mongo_port)
+                client.pickaxe_filtering.pickaxe_run_info.update_one(
+                    {"_id": run_info_id}, {"$set": {"errored_out": True}}
+                )
+                client.close()
+
                 save_to_mongo(
                     pk=pk,
                     processes=processes,
@@ -173,13 +179,6 @@ def transform_pickaxe_compounds(
                     mongo_port=mongo_port,
                     collection=collection,
                     run_info_id=run_info_id,
-                )
-
-                run_col = pymongo.MongoClient(
-                    host=mongo_host, port=mongo_port
-                ).pickaxe_filtering.pickaxe_run_info
-                run_col.update_one(
-                    {"_id": run_info_id}, {"$set": {"errored_out": True}}
                 )
                 
                 logger.error(f"Successfully saved to mongo db at {mongo_url}")
@@ -199,6 +198,12 @@ def transform_pickaxe_compounds(
             if True:
                 logger.error(f"Attempting to save to save current progress to a mongo database")
 
+                client = pymongo.MongoClient(host=mongo_host, port=mongo_port)
+                client.pickaxe_filtering.pickaxe_run_info.update_one(
+                    {"_id": run_info_id}, {"$set": {"errored_out": True}}
+                )
+                client.close()
+
                 save_to_mongo(
                     pk=pk,
                     processes=processes,
@@ -207,13 +212,6 @@ def transform_pickaxe_compounds(
                     mongo_port=mongo_port,
                     collection=collection,
                     run_info_id=run_info_id,
-                )
-
-                run_col = pymongo.MongoClient(
-                    host=mongo_host, port=mongo_port
-                ).pickaxe_filtering.pickaxe_run_info
-                run_col.update_one(
-                    {"_id": run_info_id}, {"$set": {"errored_out": True}}
                 )
 
                 logger.error(f"Successfully saved to mongo db at {mongo_url}")
@@ -236,26 +234,38 @@ def transform_pickaxe_compounds(
 
     write_start_time = time.time()
     logger.info("Writing Pickaxe run info to mongo database")
+    try:
+        save_to_mongo(
+            pk=pk,
+            processes=processes,
+            logger=logger,
+            mongo_host=mongo_host,
+            mongo_port=mongo_port,
+            collection=collection,
+            run_info_id=run_info_id,
+        )
+    except Exception as e:
+        logger.error(f"------- Writing to Mongo errored out -------")
+        logger.error("Could not write pickaxe run to mongo db")
+        logger.error(f"The stack trace of the error:")
+        logger.error(f"{str(e)}")
+        logger.error(f"{traceback.format_exc()}")
 
-    save_to_mongo(
-        pk=pk,
-        processes=processes,
-        logger=logger,
-        mongo_host=mongo_host,
-        mongo_port=mongo_port,
-        collection=collection,
-        run_info_id=run_info_id,
-    )
+        # Set errored out to true in mongo db
+        client = pymongo.MongoClient(host=mongo_host, port=mongo_port)
+        client.pickaxe_filtering.pickaxe_run_info.update_one(
+            {"_id": run_info_id}, {"$set": {"errored_out": True}}
+        )
+        client.close()
 
     write_time = time.time() - write_start_time
     logger.info(f"Finished writing to database in {str(datetime.timedelta(seconds=write_time))} seconds")
 
-    run_col = pymongo.MongoClient(
-        host=mongo_host, port=mongo_port
-    ).pickaxe_filtering.pickaxe_run_info
-    run_col.update_one(
+    client = pymongo.MongoClient(host=mongo_host, port=mongo_port)
+    client.pickaxe_filtering.pickaxe_run_info.update_one(
         {"_id": run_info_id}, {"$set": {"completed": True}}
     )
+    client.close()
 
     logger.info(f"------- Pickaxe Run Complete -------")
     logger.info(f"Elapsed time:     {str(datetime.timedelta(seconds=total_time))}")
@@ -477,7 +487,7 @@ def add_compounds_to_mongo_db(
 
     # NOTE Should make try except block when adding, maybe some logic to handle errors
     # too
-    # client.close()
+    client.close()
 
     return None
 
@@ -519,7 +529,7 @@ def add_found_in_data_to_document(
     ]
     res = db[collection].bulk_write([UpdateOne(*tup) for tup in update_tuples])
     
-    # client.close()
+    client.close()
 
     return None
 
@@ -551,9 +561,10 @@ def save_to_mongo(
     logger.info("in function add_to_mongo")
     # TODO: Add logger outputs throughout method
 
+    # BUG: There is a bug being raised somewhere in these 4 lines of code
     # Get set of all new compound IDs to add to collection
     compound_collection = db[collection]
-    db_compound_ids = {str(_id) for _id in compound_collection.find().distinct('_id')}
+    db_compound_ids = {doc["_id"] for doc in compound_collection.find()}
     pickaxe_compound_ids = {cpd["InChI_key"].split("-")[0] for cpd in pk.compounds.values()}
     new_compounds = pickaxe_compound_ids - db_compound_ids
 
