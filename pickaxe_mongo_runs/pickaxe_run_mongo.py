@@ -235,7 +235,11 @@ def transform_pickaxe_compounds(
         logger.info(f"New Compounds:    {pk.num_new_compounds}")
         logger.info(f"New Reactions:    {pk.num_new_reactions}")
 
-        if maximum_compounds is not None and pk.num_new_compounds > maximum_compounds:
+        if (
+            maximum_compounds is not None and
+            pk.num_new_compounds is not None and
+            pk.num_new_compounds > maximum_compounds
+        ):
             logger.warn(f"Maximum number of compounds reached. Exiting expansion loop")
             break
 
