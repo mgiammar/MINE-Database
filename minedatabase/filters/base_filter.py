@@ -35,7 +35,15 @@ class Filter(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def _choose_items_to_filter(self, pickaxe: Pickaxe, processes: int) -> Set[str]:
+    def _choose_items_to_filter(
+        self,
+        pickaxe: Pickaxe,
+        processes: int,
+        compound_ids_to_check: set,
+        reaction_ids_to_check: set,
+        whitelist_compound_ids: set,
+        whitelist_reaction_ids: set
+    ) -> Set[str]:
         """Return list of compounds to remove from pickaxe object.
 
         Parameters
@@ -46,12 +54,21 @@ class Filter(metaclass=abc.ABCMeta):
             The number of processes to use, by default 1.
         generation : int
             Which generation the expansion is in.
+        compound_ids_to_check : set
+            Set of compound ids previously selected for removal by a filter
+        reaction_ids_to_check : set
+            Set of reaction ids previously selected for removal by a filter
+        whitelist_compound_ids : set
+            Set of compound ids previously selected for whitelist by a filter
+        whitelist_reaction_ids : set
+            Set of reaction ids previously selected for whitelist by a filter
         """
         pass
 
     def apply_filter(
         self,
         pickaxe: Pickaxe,
+        previously_removed: set,
         processes: int = 1,
         generation: int = 0,
         print_on: bool = True,
@@ -62,18 +79,25 @@ class Filter(metaclass=abc.ABCMeta):
         ----------
         pickaxe : Pickaxe
             The Pickaxe object to filter.
+        previously_removed : set
+            Set of pickaxe compound ids which were previously selected for removal by
+            filters
         processes : int
             The number of processes to use, by default 1.
         print_on : bool
             Whether or not to print filtering results.
+        previous_cpds: set
+            Set of compounds selected from previous filters. Used when applying a filter
+            to compounds only selected by previous filter
         """
         time_start = time.time()
 
         self.generation = generation
+        print("FILTER GEN", self.generation)
 
         if not self._should_filter_this_generation():
             logger.info(f"Not applying {self.filter_name} this generation")
-            return
+            return set(), set()
             
 
         if print_on:
@@ -81,18 +105,31 @@ class Filter(metaclass=abc.ABCMeta):
             self._pre_print_header(pickaxe)
             self._pre_print()
 
-        compound_ids_to_check, reaction_ids_to_check = self._choose_items_to_filter(
-            pickaxe, processes
+        (
+            compound_ids_to_check,
+            reaction_ids_to_check,
+            whitelist_compound_ids,
+            whitelist_reaction_ids
+        ) = self._choose_items_to_filter(
+            pickaxe, processes, previously_removed
         )
 
-        self._apply_filter_results(
-            pickaxe, compound_ids_to_check, reaction_ids_to_check
-        )
+        # Do not apply filter results in until all filters have been applied
+        # self._apply_filter_results(
+        #     pickaxe, compound_ids_to_check, reaction_ids_to_check
+        # )
 
         if print_on:
             n_filtered = self._get_n(pickaxe, "filtered")
             self._post_print(pickaxe, n_total, n_filtered, time.time() - time_start)
             self._post_print_footer(pickaxe)
+
+        return (
+            compound_ids_to_check,
+            reaction_ids_to_check,
+            whitelist_compound_ids,
+            whitelist_reaction_ids
+        )
 
     @abc.abstractmethod
     def get_filter_fields_as_dict(self) -> dict:
@@ -212,8 +249,12 @@ class Filter(metaclass=abc.ABCMeta):
     def _apply_filter_results(
         self,
         pickaxe: Pickaxe,
+        # NOTE: The arguments passed are sets, not lists. Also, having default values be
+        # empty list can be dangerous. Better to be None and then check
         compound_ids_to_check: List[str] = [],
         reaction_ids_to_delete: List[str] = [],
+        whitelist_cpd_ids: List[str] = [],
+        whitelist_rxn_ids: List[str] = [],
     ) -> None:
         """Apply filter results to Pickaxe object.
 
@@ -241,9 +282,15 @@ class Filter(metaclass=abc.ABCMeta):
         # logic and actually understand the behavior
         def should_delete_reaction(rxn_id: str) -> bool:
             """Returns whether or not a reaction can safely be deleted."""
+            if rxn_id in whitelist_rxn_ids:
+                return False
+
             products = pickaxe.reactions[rxn_id]["Products"]
             for _, c_id in products:
-                if c_id.startswith("C") and c_id not in cpds_to_remove:
+                if (
+                    c_id in whitelist_cpd_ids or
+                    (c_id.startswith("C") and c_id not in cpds_to_remove)
+                ):
                     return False
             # Every compound isn't in cpds_to_remove
             return True
@@ -306,7 +353,11 @@ class Filter(metaclass=abc.ABCMeta):
                 if not cpd_dict:
                     continue
 
-                if not cpd_dict["Expand"] and cpd_id.startswith("C"):
+                if (
+                    cpd_id not in whitelist_cpd_ids and
+                    not cpd_dict["Expand"] and
+                    cpd_id.startswith("C")
+                ):
                     cpds_to_remove.add(cpd_id)
 
                     rxns_to_check.extend(pickaxe.compounds[cpd_id]["Product_of"])

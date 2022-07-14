@@ -12,4 +12,6 @@ from minedatabase.filters.similarity import (
 
 from minedatabase.filters.similarity_sampling import SimilarityClusteringFilter
 from minedatabase.filters.similarity_sampling import MultiRoundSimilarityClusteringFilter
+from minedatabase.filters.similarity_sampling import TargetCompoundsClusteringFilter
 from minedatabase.filters.random_subselection import RandomSubselectionFilter
+from minedatabase.filters.target_hit import TargetCompoundHitFilter

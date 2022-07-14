@@ -95,7 +95,7 @@ class SimilarityClusteringFilter(Filter):
         logger.info(f"Done filtering Generation {pickaxe.generation}")
         logger.info("-----------------------------------------------")
 
-    def _choose_items_to_filter(self, pickaxe, processes):
+    def _choose_items_to_filter(self, pickaxe, processes, previously_removed):
         """Creates clusters based on fingerprint similarity using RDKit and samples 
         compounds_per_cluster from each cluster to keep expanding
         
@@ -109,7 +109,8 @@ class SimilarityClusteringFilter(Filter):
         # TODO: Take into account all compounds or previously selected
         smiles_by_cid = {
              cpd_id: cpd["SMILES"] for cpd_id, cpd in pickaxe.compounds.items()
-            if cpd["Generation"] == pickaxe.generation
+            if cpd["Generation"] == pickaxe.generation and 
+            (self.all_compounds or cpd_id not in previously_removed)
         }
 
         clusters = self.clusterer.generate_clusters(smiles_by_cid, self.cutoff)
@@ -125,7 +126,7 @@ class SimilarityClusteringFilter(Filter):
 
         # Return IDs of all compounds in this generation to not keep
         cpds_remove_set = set(smiles_by_cid.keys()).difference(cpd_ids_to_keep)
-        return cpds_remove_set, rxns_remove_set
+        return cpds_remove_set, rxns_remove_set, set(), set()
 
 
 class MultiRoundSimilarityClusteringFilter(Filter):
@@ -217,7 +218,7 @@ class MultiRoundSimilarityClusteringFilter(Filter):
         logger.info(f"Compounds per cluster:  {self.compounds_selected_per_cluster}")
         logger.info(f"Cluster size cutoff:    {self.cluster_size_cutoff}")
 
-    def _choose_items_to_filter(self, pickaxe, processes):
+    def _choose_items_to_filter(self, pickaxe, processes, previously_removed):
         """Creates clusters based on fingerprint similarity using RDKit and samples 
         compounds_per_cluster from each cluster to keep expanding
         
@@ -230,7 +231,8 @@ class MultiRoundSimilarityClusteringFilter(Filter):
         # Dictionary with compound id as key and smiles for that compound as value
         smiles_by_cid = {
              cpd_id: cpd["SMILES"] for cpd_id, cpd in pickaxe.compounds.items()
-            if cpd["Generation"] == pickaxe.generation
+            if cpd["Generation"] == pickaxe.generation and 
+            (self.all_compounds or cpd_id not in previously_removed)
         }
         all_cids = set(smiles_by_cid.keys())
 
@@ -282,7 +284,8 @@ class MultiRoundSimilarityClusteringFilter(Filter):
             _ = [smiles_by_cid.pop(cid) for cid in drop_cids]
 
         cpds_remove_set = all_cids.difference(cpd_ids_to_keep)
-        return cpds_remove_set, rxns_remove_set
+        return cpds_remove_set, rxns_remove_set, set(), set()  
+        # Filter doesn't do whitelisting
  
 
 class TargetCompoundsClusteringFilter(Filter):
@@ -336,7 +339,7 @@ class TargetCompoundsClusteringFilter(Filter):
         all_compounds: bool=True,
     ):
         # Attributes for all filters
-        self._filter_name = "Similarity Clustering Filter"
+        self._filter_name = "Target Compound Similarity Clustering Filter"
         self.generation_list=generation_list
         self.priority = priority
         self.all_compounds = all_compounds
@@ -400,7 +403,7 @@ class TargetCompoundsClusteringFilter(Filter):
         logger.info(f"Done filtering Generation {pickaxe.generation}")
         logger.info("-----------------------------------------------")
 
-    def _choose_items_to_filter(self, pickaxe, processes):
+    def _choose_items_to_filter(self, pickaxe, processes, previously_removed):
         """Creates clusters based on fingerprint similarity using RDKit and samples 
         compounds_per_cluster from each cluster to keep expanding
         
@@ -412,7 +415,8 @@ class TargetCompoundsClusteringFilter(Filter):
 
         smiles_by_cid = {
              cpd_id: cpd["SMILES"] for cpd_id, cpd in pickaxe.compounds.items()
-            if cpd["Generation"] == pickaxe.generation
+            if cpd["Generation"] == pickaxe.generation and 
+            (self.all_compounds or cpd_id not in previously_removed)
         }
         all_cids = set(smiles_by_cid.keys())
 
@@ -489,7 +493,7 @@ class TargetCompoundsClusteringFilter(Filter):
             _ = [smiles_by_cid.pop(cid) for cid in drop_cids]
                 
         cpds_remove_set = all_cids.difference(cpd_ids_to_keep)
-        return cpds_remove_set, rxns_remove_set
+        return cpds_remove_set, rxns_remove_set, set(), set()
 
 
 if __name__ == "__main__":

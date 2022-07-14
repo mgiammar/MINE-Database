@@ -22,6 +22,8 @@ from minedatabase.filters import MWFilter
 from minedatabase.filters import RandomSubselectionFilter
 from minedatabase.filters import SimilarityClusteringFilter
 from minedatabase.filters import MultiRoundSimilarityClusteringFilter
+from minedatabase.filters import TargetCompoundsClusteringFilter
+from minedatabase.filters import TargetCompoundHitFilter
 
 import pymongo
 from pymongo import UpdateOne
@@ -53,6 +55,8 @@ FILTER_NAME_MAP = {
     "Random Subselection": RandomSubselectionFilter,
     "Similarity Clustering Filter": SimilarityClusteringFilter,
     "Multi Round Similarity Clustering Filter": MultiRoundSimilarityClusteringFilter,
+    "Target Compound Similarity Clustering Filter": TargetCompoundsClusteringFilter,
+    "Target Compound Whitelist": TargetCompoundHitFilter,
 }
 
 
@@ -128,6 +132,7 @@ def transform_pickaxe_compounds(
     mongo_port: int,
     collection: str,
     run_info_id: str,
+    maximum_compounds: int=None,
 ):
     """Helper function to expand for a number of generations one at a time logging info
     in-between each generation. At end of expansion, writes pickaxe compounds to a mongo
@@ -142,10 +147,11 @@ def transform_pickaxe_compounds(
         (int) mongo_port:
         (str) collection:
         (str) run_info_id:
+        (int) maximum_compounds: Maximum allowed compounds in Pickaxe object. Will
+            exit generation expansion loop if reached
     Returns:
         None
     """
-    # TODO: Write info to mongo database metadata collection
 
     total_time = 0  # in seconds
     for gen in range(0, generations + 1):
@@ -181,7 +187,7 @@ def transform_pickaxe_compounds(
                     run_info_id=run_info_id,
                 )
                 
-                logger.error(f"Successfully saved to mongo db at {mongo_url}")
+                logger.error(f"Successfully saved to mongo db at {mongo_host}")
                 logger.error(f"Elapsed time:     {str(datetime.timedelta(seconds=total_time))}")
 
             raise e
@@ -214,7 +220,7 @@ def transform_pickaxe_compounds(
                     run_info_id=run_info_id,
                 )
 
-                logger.error(f"Successfully saved to mongo db at {mongo_url}")
+                logger.error(f"Successfully saved to mongo db at {mongo_host}")
                 logger.error(f"Elapsed time:     {str(datetime.timedelta(seconds=total_time))}")
             raise e
         
@@ -229,8 +235,9 @@ def transform_pickaxe_compounds(
         logger.info(f"New Compounds:    {pk.num_new_compounds}")
         logger.info(f"New Reactions:    {pk.num_new_reactions}")
 
-        # NOTE: Run is not saved to database every generation. This reduces number
-        # of times the compounds dict needs to be iterated over
+        if maximum_compounds is not None and pk.num_new_compounds > maximum_compounds:
+            logger.warn(f"Maximum number of compounds reached. Exiting expansion loop")
+            break
 
     write_start_time = time.time()
     logger.info("Writing Pickaxe run info to mongo database")
@@ -343,7 +350,7 @@ def get_args_from_argparse():
         "--mongo_host",
         help="Mongo DB hostname",
         type=str,
-        # default="localhost"  # TODO: make sequoia host when transfer
+        # default="localhost"
         default="sequoia.mcs.anl.gov"
     )
     parser.add_argument(
@@ -376,6 +383,12 @@ def get_args_from_argparse():
         help="Wether to filter the Pickaxe object after the final generation",
         type=bool,
         default=True
+    )
+    parser.add_argument(
+        "--maximum_compounds",
+        help="Exit expansion loop after reaching this number of compounds",
+        type=int,
+        default=None
     )
     return parser.parse_args()
 
@@ -553,8 +566,6 @@ def save_to_mongo(
             which generation a compound is found in.
         (str) mongo_host: Hostname for mongo database.
         (int) mongo_port: Port number for mongo database.
-    
-        # (TODO) db:  Cant pass DB object itself, need to pass stuff to make client
     Returns:
         None
     """
@@ -700,7 +711,8 @@ if __name__ == "__main__":
         mongo_host=args.mongo_host,
         mongo_port=args.mongo_port,
         collection=args.collection,
-        run_info_id=run_info_id
+        run_info_id=run_info_id,
+        maximum_compounds=args.maximum_compounds
     )
 
     print("PICKAXE RUN COMPLETED")

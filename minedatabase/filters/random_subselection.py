@@ -32,15 +32,26 @@ class RandomSubselectionFilter(Filter):
             Maximum number of compounds to keep from the generation
         (list) generation_list:
             Optional list of integers corresponding to which generations to apply filter to
+        all_cpds : Bool
+            If True, apply this filter to all compounds in the generation, otherwise only
+            apply compounds selected by previous filters
         # (bool) strict_filter: If True, the filter will return a compound ID set for
-        #     compounds to remove. Otherwise an empty set will be returned and only the 
-        #     compounds selected will be marked for expansion. Default is True
+        #     compounds to remove. Otherwise an empty set will be returned and only the
+        # #     compounds selected will be marked for expansion. Default is True
     """
 
-    def __init__(self, max_compounds, generation_list=None) -> None:
+    def __init__(
+        self,
+        max_compounds,
+        generation_list=None,
+        priority: int=10,
+        all_compounds: bool=True
+    ) -> None:
         self._filter_name = "Random Subselection"
         self.max_compounds = max_compounds
         self.generation_list = generation_list
+        self.priority = priority
+        self.all_compounds = all_compounds
 
     @property
     def filter_name(self) -> str:
@@ -51,8 +62,9 @@ class RandomSubselectionFilter(Filter):
         return {
             "filter_name": self._filter_name,
             "max_compounds": self.max_compounds,
-            "generation_list": self.generation_list
-
+            "generation_list": self.generation_list,
+            "priority": self.priority,
+            "all_compounds": self.all_compounds,
         }
 
     def _pre_print(self) -> None:
@@ -78,13 +90,12 @@ class RandomSubselectionFilter(Filter):
 
     #     return (self.generation - 1) in self.generation_list
 
-    def _choose_items_to_filter(self, pickaxe, processes):
+    def _choose_items_to_filter(self, pickaxe, processes, previously_removed):
         """Randomly chooses max_compounds from the Pickaxe object to expand in the
         next generation
         """
         cpds_remove_set = set()
         rxn_remove_set = set()
-
         generation = pickaxe.generation
         # if not self._should_filter_this_generation():
         #     return cpds_remove_set, rxn_remove_set
@@ -94,6 +105,8 @@ class RandomSubselectionFilter(Filter):
             if cpd["Generation"] == generation and
             cpd["Type"] not in ["Coreactant"]
         ]
+        if not self.all_compounds:
+            cpd_ids = [cid for cid in cpd_ids if cid not in previously_removed]
         keep_ids = np.random.choice(
             cpd_ids,
             replace=False,
@@ -103,5 +116,5 @@ class RandomSubselectionFilter(Filter):
             pickaxe.compounds[cpd_id]["Expand"] = cpd_id in keep_ids
 
         cpds_remove_set =  set(cpd_ids).difference(set(keep_ids))
-        return cpds_remove_set, rxn_remove_set
+        return cpds_remove_set, rxn_remove_set, set(), set()
         

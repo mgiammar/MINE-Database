@@ -630,13 +630,55 @@ class Pickaxe:
         generations : int, optional
             Number of generations to create, by default 1.
         """
+        # Sort filters based on priority
+        self.filters.sort(key=lambda fil: fil.priority)
 
         while self.generation < generations or (
             self.generation == generations and self.filter_after_final_gen
         ):
 
+            compound_ids_to_check = set()
+            reaction_ids_to_check = set()
+            whitelist_compound_ids = set()
+            whitelist_reaction_ids = set()
             for _filter in self.filters:
-                _filter.apply_filter(self, processes, self.generation)
+                # Wait until all filters have be applied to remove compounds
+                # NOTE: Add whitelist compound set
+                # NOTE: Need to set all compounds for expansion to False, only setting
+                # True if compound is not selected
+                returned_sets = _filter.apply_filter(
+                    pickaxe=self,  # Is pickaxe object
+                    previously_removed=reaction_ids_to_check,
+                    processes=processes,
+                    generation=self.generation
+                )
+
+                # Not all filters return whitelist sets so unpack return values based
+                # on size
+                if len(returned_sets) == 2:
+                    cpds, rxns = returned_sets
+                    cpds_whitelist = set()
+                    rxns_whitelist = set()
+                elif len(returned_sets) == 4:
+                    cpds, rxns, cpds_whitelist, rxns_whitelist = returned_sets
+
+                compound_ids_to_check = compound_ids_to_check | cpds  # Union
+                reaction_ids_to_check = reaction_ids_to_check | rxns  # Union
+                whitelist_compound_ids = whitelist_compound_ids | cpds_whitelist
+                whitelist_reaction_ids = whitelist_reaction_ids | rxns_whitelist
+
+            for cpd_id in compound_ids_to_check:
+                # Will be true if compound is in whitelist, otherwise false
+                self.compounds[cpd_id]["Expand"] = cpd_id in whitelist_compound_ids
+
+            # Cannot import base Filter class since abstract... Could just make it a
+            # regular class
+            from minedatabase.filters import MWFilter
+            MWFilter()._apply_filter_results(
+                self,
+                compound_ids_to_check=compound_ids_to_check,
+                reaction_ids_to_delete=reaction_ids_to_check,
+            )
 
             if self.generation < generations:
                 # Prune network to only things that are expanded as white list

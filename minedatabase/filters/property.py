@@ -33,6 +33,9 @@ class MWFilter(Filter):
         Minimum MW in g/mol, by default None.
     max_MW : Union[float, None]
         Maximum MW in g/mol, by default None.
+    all_compounds : Bool
+        If True, apply this filter to all compounds in the generation, otherwise only
+        apply compounds selected by previous filters
 
     Attributes
     ----------
@@ -40,19 +43,26 @@ class MWFilter(Filter):
         Minimum MW in g/mol.
     max_MW : Union[float, None]
         Maximum MW in g/mol.
+    all_compounds : Bool
+        If True, apply this filter to all compounds in the generation, otherwise only
+        apply compounds selected by previous filters
     """
 
     def __init__(
         self,
         min_MW: Union[float, None] = None,
         max_MW: Union[float, None] = None,
-        generation_list: Union[list, None] = None
+        generation_list: Union[list, None] = None,
+        priority: int = 10,
+        all_compounds: bool = True
     ) -> None:
         self._filter_name = "Molecular Weight"
 
         self.min_MW = min_MW or 0
         self.max_MW = max_MW or 100000
         self.generation_list = generation_list
+        self.priority = priority
+        self.all_compounds = all_compounds
 
     @property
     def filter_name(self) -> str:
@@ -64,14 +74,21 @@ class MWFilter(Filter):
             "filter_name": self._filter_name,
             "min_MW": self.min_MW,
             "max_MW": self.max_MW,
+            "priority": self.priority,
+            "all_compounds": self.all_compounds,
         }
 
-    def _choose_items_to_filter(self, pickaxe: Pickaxe, processes: int = 1) -> Set[str]:
+    def _choose_items_to_filter(
+        self,
+        pickaxe: Pickaxe,
+        processes: int=1,
+        previously_removed: set=None
+    ) -> Set[str]:
         """
         Check the compounds against the MW constraints and return
         compounds to filter.
         """
-
+        previously_removed = set() if previously_removed is None else previously_removed
         def MW_is_good(cpd):
             cpd_MW = ExactMolWt(MolFromSmiles(cpd["SMILES"]))
             return self.min_MW < cpd_MW and cpd_MW < self.max_MW
@@ -98,6 +115,8 @@ class MWFilter(Filter):
 
         for cpd in pickaxe.compounds.values():
             # Compounds are in generation and correct type
+            if not self.all_compounds and cpd in previously_removed:
+                continue
             if cpd["Generation"] == pickaxe.generation and cpd["Type"] not in [
                 "Coreactant",
                 "Target Compound",
@@ -113,8 +132,8 @@ class MWFilter(Filter):
                         if not MW_is_good(cpd):
                             cpds_remove_set.add(cpd["_id"])
 
-        for c_id in cpds_remove_set:
-            pickaxe.compounds[c_id]["Expand"] = False
+        # for c_id in cpds_remove_set:
+        #     pickaxe.compounds[c_id]["Expand"] = False
 
         logger.info(
             f"""
