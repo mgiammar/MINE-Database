@@ -1,6 +1,11 @@
 from minedatabase.filters.base_filter import Filter
 from minedatabase.pickaxe import Pickaxe
 
+import pandas as pd
+
+import logging
+logger = logging.getLogger("pickaxe_run")
+
 
 class TargetCompoundHitFilter(Filter):
     """This filter takes in a csv file with target compound inchikeys and whitelists
@@ -35,7 +40,7 @@ class TargetCompoundHitFilter(Filter):
             "generation_list": self.generation_list,
             "priority": self.priority,
             "all_compounds": self.all_compounds,
-            "target_compounds": self.target_compounds,
+            "target_compounds_path": self.target_compounds_path,
         }
 
     def _pre_print(self) -> None:
@@ -55,7 +60,7 @@ class TargetCompoundHitFilter(Filter):
         whitelist_compounds = {
             cpd_id for cpd_id, cpd in pickaxe.compounds.items()
             if cpd["Generation"] == pickaxe.generation and "InChI_key" in cpd
-            and cpd["InChI_key"].split("-")[0] in self.known_compounds
+            and cpd["InChI_key"].split("-")[0] in self.target_compounds
         }
 
         return set(), set(), whitelist_compounds, set()
@@ -64,10 +69,6 @@ class TargetCompoundHitFilter(Filter):
         """Loads the inchikeys of target compounds in the csv file pointed to by 
         file_path
         """
-        cpds_csv = pd.read(file_path)
-        known_cpds_dict = {
-            row[1]["InChI_key"]: Chem.RDKFingerprint(
-                Chem.MolFromSmiles(row[1]["SMILES"]), **self.fingerprint_kwargs
-            ) for row in cpds_csv.iterrows()
-        }
-        return list(known_cpds_dict.keys())
+        cpds_csv = pd.read_csv(file_path)
+        known_cpds = [row[1]["InChI_key"] for row in cpds_csv.iterrows()]
+        return known_cpds
