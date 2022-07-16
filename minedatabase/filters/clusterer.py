@@ -174,6 +174,10 @@ class TanimotoSimilarityClusterer(BaseClusterer):
             (float) cutoff: Cutoff similarity for compounds. Lower value means compounds
                 must be more similar to appear in the same cluster
         """
+        if not self._should_cluster(len(smiles_by_cid)):
+            logger.warning("Too many compounds, not clustering")
+            return []
+
         fps = [
             Chem.RDKFingerprint(Chem.MolFromSmiles(sm), **self.fingerprint_kwargs) 
             for sm in smiles_by_cid.values()

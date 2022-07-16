@@ -171,7 +171,7 @@ class MultiRoundSimilarityClusteringFilter(Filter):
         all_compounds: bool=True,
     ):
         # Attributes for all filters
-        self._filter_name = "Similarity Clustering Filter"
+        self._filter_name = "Multi Round Similarity Clustering Filter"
         self.generation_list=generation_list
         self.priority = priority
         self.all_compounds = all_compounds

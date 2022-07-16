@@ -684,7 +684,7 @@ class Pickaxe:
                 # Prune network to only things that are expanded as white list
                 if self.prune_between_gens and self.filters:
                     # Find targets and compounds where expand is true
-                    white_list = []
+                    white_list = list(whitelist_reaction_ids)
                     for cpd_id, cpd_info in self.compounds.items():
                         if cpd_id.startswith("T"):
                             continue

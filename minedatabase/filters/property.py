@@ -140,7 +140,7 @@ class MWFilter(Filter):
             """
         )
 
-        return cpds_remove_set, rxn_remove_set
+        return cpds_remove_set, rxn_remove_set, set(), set()
 
 
 class AtomicCompositionFilter(Filter):

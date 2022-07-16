@@ -97,7 +97,7 @@ class Filter(metaclass=abc.ABCMeta):
 
         if not self._should_filter_this_generation():
             logger.info(f"Not applying {self.filter_name} this generation")
-            return set(), set()
+            return set(), set(), set(), set()
             
 
         if print_on:
