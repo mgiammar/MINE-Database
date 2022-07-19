@@ -284,9 +284,12 @@ class TanimotoSimilarityClusterer(BaseClusterer):
         drop_idxs = [self.ordered_ids.index(cid) for cid in compounds]
         drop_idxs.sort()
         _ = [self.ordered_ids.pop(idx) for idx in drop_idxs[::-1]]
-
-
+        
+        if self.matrix is None:
+            return
+            
         num_rows = len(self.matrix) + 1  # +1 since [0, 0] of full mat does not have entry
+
         if len(drop_idxs) == 0:
             return
         
